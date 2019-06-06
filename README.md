@@ -1,5 +1,6 @@
 # NativeGrid
 GOAL: Create grid data that works well with Unity.Jobs and ECS
+
 WARNING: this is work in progress, not everything as it should yet
 
 FEATURES:
