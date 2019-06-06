@@ -1,21 +1,14 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
+/// homepage: https://github.com/andrew-raphael-lukasik/NativeGrid
 
 using UnityEngine;
-using UnityEngine.Assertions;
-using UnityEngine.Profiling;
-
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
 
-
 //TODO: jobify entire thing
 
-
 public class NativeGrid <STRUCT>
-    : IDisposable
+    : System.IDisposable
     where STRUCT : struct
 {
     #region FIELDS & PROPERTIES
@@ -27,7 +20,7 @@ public class NativeGrid <STRUCT>
 
     public readonly int width;
     public readonly int height;
-    public readonly int length = -1;
+    public readonly int length;
     public bool IsCreated => _values.IsCreated;
     public JobHandle writeAccess = default(JobHandle);
 
@@ -121,7 +114,7 @@ public class NativeGrid <STRUCT>
         var job = new ForEachFuncJob<STRUCT>( _values , func );
         return writeAccess = job.Schedule(
             _values.Length , 1024 ,
-            JobHandle.CombineDependencies(dependency,writeAccess)
+            JobHandle.CombineDependencies( dependency , writeAccess )
         );
     }
     /// <param name="action"> argument is grid index1d </param>
