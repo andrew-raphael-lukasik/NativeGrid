@@ -49,16 +49,16 @@ public class NativeGrid <STRUCT>
     #region OPERATORS
 
 
-    public STRUCT this [ int index1d ]
+    public STRUCT this [ int i ]
     {
-        get => _values[ index1d ];
-        set => _values[ index1d ] = value;
+        get { writeAccess.Complete(); return _values[i]; }
+        set { writeAccess.Complete(); _values[i] = value; }
     }
 
     public STRUCT this [ int x , int y ]
     {
-        get => _values[ Index2dTo1d( x , y ) ];
-        set => _values[ Index2dTo1d( x , y ) ] = value;
+        get { writeAccess.Complete(); return _values[Index2dTo1d(x,y)]; }
+        set { writeAccess.Complete(); _values[Index2dTo1d(x,y)] = value; }
     }
 
 
@@ -69,23 +69,6 @@ public class NativeGrid <STRUCT>
 
     #endregion
     #region PUBLIC METHODS
-    
-    
-    public override int GetHashCode ()
-    {
-        int hash = 17;
-        int length = this.length;
-
-        for( int i=0 ; i<length ; i++ )
-        {
-            hash = hash*23+_values[ i ].GetHashCode();
-        }
-
-        hash = hash*23+width.GetHashCode();
-        hash = hash*23+height.GetHashCode();
-
-        return hash;
-    }
 
 
     /// <summary> Executes for each grid cell </summary>
@@ -94,7 +77,7 @@ public class NativeGrid <STRUCT>
         int arrayLength = this.length;
         for( int i=0 ; i < arrayLength ; i++ )
         {
-            action.Execute( this._values[ i ] );
+            action.Execute( this._values[i] );
         }
     }
     public void ForEach ( IPredicate<STRUCT> predicate , IAction<STRUCT> action )
@@ -102,7 +85,7 @@ public class NativeGrid <STRUCT>
         int arrayLength = this.length;
         for( int i=0 ; i < arrayLength ; i++ )
         {
-            STRUCT cell = this._values[ i ];
+            STRUCT cell = this._values[i];
             if( predicate.Execute( cell )==true )
             {
                 action.Execute( cell );
@@ -145,17 +128,17 @@ public class NativeGrid <STRUCT>
         int yEnd = y + h;
         if( onRectIsOutOfBounds!=null && ( xEnd > width || yEnd > height ) )
         {
-            onRectIsOutOfBounds.Execute( x , y );
+            onRectIsOutOfBounds.Execute(x,y);
         }
         else
         {
-            for( ; x < xEnd ; x++ )
+            for( ; x<xEnd ; x++ )
             {
                 //Debug.Log( $"\t\t\tx={ x }" );
                 for( ; y < yEnd ; y++ )
                 {
                     //Debug.Log( $"\t\t\ty={ y }" );
-                    action.Execute( x , y );
+                    action.Execute(x,y);
                 }
                 y = yStart;
             }
@@ -185,7 +168,7 @@ public class NativeGrid <STRUCT>
     public int Index2dTo1d ( int x , int y )
     {
         #if DEBUG
-        if( IsIndex2dValid( x , y )==false ) { Debug.LogWarningFormat( "[{0},{1}] index is invalid for this grid" , x , y ); }
+        if( IsIndex2dValid(x,y)==false ) { Debug.LogWarningFormat( "[{0},{1}] index is invalid for this grid" , x , y ); }
         #endif
         return y * width + x;
     }
@@ -281,7 +264,7 @@ public class NativeGrid <STRUCT>
     {
         float3 cornerA = IndexToLocalPoint( x , y , spacing );
         float3 cornerB = IndexToLocalPoint( x+w-1 , y+h-1 , spacing );
-        return cornerA+( cornerB-cornerA )*0.5f;
+        return cornerA+(cornerB-cornerA)*0.5f;
     }
 
 
@@ -291,14 +274,14 @@ public class NativeGrid <STRUCT>
     public int GetSurroundingTypeCount ( int x , int y , IPredicate<STRUCT> predicate )
     {
         int result = 0;
-        for( int neighbourX = x-1 ; neighbourX <= x+1 ; neighbourX++ )
-        for( int neighbourY = y-1 ; neighbourY <= y+1 ; neighbourY++ )
+        for( int neighbourX=x-1 ; neighbourX<=x+1 ; neighbourX++ )
+        for( int neighbourY=y-1 ; neighbourY<=y+1 ; neighbourY++ )
         {
-            if( neighbourX >= 0 && neighbourX < this.width && neighbourY >= 0 && neighbourY < this.height )
+            if( neighbourX>=0 && neighbourX<this.width && neighbourY>=0 && neighbourY<this.height )
             {
                 if( neighbourX!=x || neighbourY!=y )
                 {
-                    result += predicate.Execute( ( this )[ neighbourX , neighbourY ] ) ? 1 : 0;
+                    result += predicate.Execute((this)[neighbourX,neighbourY]) ? 1 : 0;
                 }
             }
             else { result++; }
@@ -423,9 +406,9 @@ public class NativeGrid <STRUCT>
         int threshold = 4
     )
     {
-        for( int i=0 ; i < iterations ; i++ )
-        for( int x = 0 ; x < width ; x++ )
-        for( int y = 0 ; y < height ; y++ )
+        for( int i=0 ; i<iterations ; i++ )
+        for( int x=0 ; x<width ; x++ )
+        for( int y=0 ; y<height ; y++ )
         {
             int neighbourWallTiles = GetSurroundingTypeCount( x , y , countNeighbours );
             if( neighbourWallTiles > threshold ) { ( this )[ x , y ] = overThreshold.Execute( ( this )[ x , y ] ); }
@@ -457,41 +440,36 @@ public class NativeGrid <STRUCT>
     public void Fill ( IPredicate<STRUCT> predicate , STRUCT fill )
     {
         int length = this.length;
-        for( int i=0 ; i < length ; i++ )
-            if( predicate.Execute( _values[ i ] )==true )
-                _values[ i ] = fill;
+        for( int i=0 ; i<length ; i++ )
+            if( predicate.Execute(_values[i])==true )
+                _values[i] = fill;
     }
     public void Fill ( IFunc<STRUCT> fillFunc )
     {
         int length = this.length;
-        for( int i=0 ; i < length ; i++ )
-            _values[ i ] = fillFunc.Execute();
+        for( int i=0 ; i<length ; i++ )
+            _values[i] = fillFunc.Execute();
     }
     /// <param name="fillFunc"> int params are x and y cordinates (index 2d)</param>
     public void Fill ( IFunc<int,int,STRUCT> fillFunc )
     {
-        for( int x = 0 ; x < width ; x++ )
-            for( int y = 0 ; y < height ; y++ )
-                ( this )[ x , y ] = fillFunc.Execute( x , y );
+        for( int x=0 ; x<width ; x++ )
+            for( int y=0 ; y<height ; y++ )
+                ( this )[ x , y ] = fillFunc.Execute(x,y);
     }
     /// <param name="fillFunc"> int param is index 1d </param>
     public void Fill ( IFunc<int,STRUCT> fillFunc )
     {
         int length = this.length;
-        for( int i=0 ; i < length ; i++ )
-            _values[ i ] = fillFunc.Execute( i );
+        for( int i=0 ; i<length ; i++ )
+            _values[i] = fillFunc.Execute( i );
     }
 
     
     /// <summary> Fills grid border cells. </summary>
     public JobHandle FillBorders ( STRUCT fill , JobHandle dependency = default(JobHandle) )
     {
-        var job = new FillBordersJob<STRUCT>(
-            array: _values ,
-            width: width ,
-            height: height ,
-            fill: fill
-        );
+        var job = new FillBordersJob<STRUCT>( array:_values , width:width , height:height , fill:fill );
         return writeAccess = job.Schedule( JobHandle.CombineDependencies(dependency,writeAccess) );
     }
 
@@ -523,7 +501,7 @@ public class NativeGrid <STRUCT>
 
 
     #endregion
-    #region NESTED TYPES
+    #region JOBS
 
 
     [Unity.Burst.BurstCompile]
@@ -598,7 +576,6 @@ public class NativeGrid <STRUCT>
                 array[Index2dTo1d(x,0,width)] = fill;
                 array[Index2dTo1d(x,yMax,width)] = fill;
             }
-
             // fill vertical border lines:
             int xMax = width-1;
             for( int y = 1 ; y < height-1 ; y++ )
@@ -667,6 +644,11 @@ public class NativeGrid <STRUCT>
         void IJobParallelFor.Execute ( int i ) => array[i] = func.Execute();
     }
 
+
+    #endregion
+    #region INTERFACES
+
+
     public interface IAction { void Execute(); }
     public interface IAction <ARG0> { void Execute( ARG0 arg0 ); }
     public interface IAction <ARG0,ARG1> { void Execute( ARG0 arg0 , ARG1 arg1 ); }
@@ -674,7 +656,6 @@ public class NativeGrid <STRUCT>
     public interface IFunc <RESULT> { RESULT Execute(); }
     public interface IFunc <ARG0,RESULT> { RESULT Execute( ARG0 arg0 ); }
     public interface IFunc <ARG0,ARG1,RESULT> { RESULT Execute( ARG0 arg0 , ARG1 arg1 ); }
-
 
     public interface IPredicate { bool Execute(); }
     public interface IPredicate <ARG0> { bool Execute( ARG0 arg0 ); }
