@@ -460,7 +460,7 @@ public abstract class NativeGrid
 
 
     /// <summary> Converts 1d to 2d array index </summary>
-    public static int2 Index1dTo2d ( int i , int width ) //=> new int2{ x=i%width , y=i/width };
+    public static int2 Index1dTo2d ( int i , int width )
     {
         #if DEBUG
         Assert_Index1dTo2d( i , width );
@@ -586,7 +586,6 @@ public abstract class NativeGrid
     {
         Assert.IsTrue( width>0 , $"FAILED: width ({width}) > 0" );
         Assert.IsTrue( i>=0 , $"FAILED: i ({i}) >= 0" );
-        Assert.IsTrue( i<width , $"FAILED: {i} < {width}" );
     }
 
     [Unity.Burst.BurstDiscard]
