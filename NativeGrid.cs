@@ -1,9 +1,12 @@
 /// homepage: https://github.com/andrew-raphael-lukasik/NativeGrid
 
 using UnityEngine;
+using UnityEngine.Assertions;
+
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
+
 
 //TODO: jobify entire thing
 
@@ -457,7 +460,25 @@ public abstract class NativeGrid
 
 
     /// <summary> Converts 1d to 2d array index </summary>
-    public static int2 Index1dTo2d ( int i , int width ) => new int2{ x=i%width , y=i/width };
+    public static int2 Index1dTo2d ( int i , int width ) //=> new int2{ x=i%width , y=i/width };
+    {
+        #if DEBUG
+        Assert_Index1dTo2d( i , width );
+        #endif
+
+        return new int2{ x=i%width , y=i/width };
+    }
+
+
+    /// <summary> Converts index 2d to 1d equivalent </summary>
+    public static int Index2dTo1d ( int x , int y , int width )
+    {
+        #if DEBUG
+        Assert_Index2dTo1d( x , y , width );
+        #endif
+
+        return y * width + x;
+    }
 
 
     /// <summary> Translate regional coordinate to outer array index 1d </summary>
@@ -466,7 +487,14 @@ public abstract class NativeGrid
     /// <param name="rx">Inner x coordinate</param>
     /// <param name="ry">Inner y coordinate</param>
     /// <param name="R_width">Outer RectInt.width</param>
-    public static int IndexTranslate ( RectInt r , int rx , int ry , int R_width ) => Index2dTo1d( r.x+rx , r.y+ry , R_width );
+    public static int IndexTranslate ( RectInt r , int rx , int ry , int R_width )
+    {
+        #if DEBUG
+        Assert_IndexTranslate( r , rx , ry , R_width );
+        #endif
+
+        return Index2dTo1d( r.x+rx , r.y+ry , R_width );
+    }
 
     /// <summary> Translate regional coordinate to outer array index 1d </summary>
     /// <param name="R">Outer RectInt</param>
@@ -474,7 +502,14 @@ public abstract class NativeGrid
     /// <param name="rx">Inner x coordinate</param>
     /// <param name="ry">Inner y coordinate</param>
     /// <param name="R_width">Outer RectInt.width</param>
-    public static int2 IndexTranslate ( RectInt r , int2 rxy ) => new int2{ x=r.x , y=r.y } + rxy;
+    public static int2 IndexTranslate ( RectInt r , int2 rxy )
+    {
+        #if DEBUG
+        Assert_IndexTranslate( r , rxy.x , rxy.y );
+        #endif
+
+        return new int2{ x=r.x , y=r.y } + rxy;
+    }
 
     /// <summary> Translate regional index to outer one </summary>
     /// <param name="R">Outer RectInt</param>
@@ -494,10 +529,6 @@ public abstract class NativeGrid
 
     /// <summary> Determines whether index 1d is inside array bounds </summary>
     public static bool IsIndex1dValid ( int i , int len ) => 0>=0 && i<len;
-
-
-    /// <summary> Converts index 2d to 1d equivalent </summary>
-    public static int Index2dTo1d ( int x , int y , int width ) => y * width + x;
 
 
     public static JobHandle Copy <T>
@@ -520,6 +551,59 @@ public abstract class NativeGrid
             JobHandle.CombineDependencies( source.writeAccess , dependency )
         );
     }
+
+
+    #endregion
+    #region ASSERTIONS
+
+
+    #if DEBUG
+
+    [Unity.Burst.BurstDiscard]
+    static void Assert_IndexTranslate ( RectInt r , int rx , int ry , int R_width )
+    {
+        Assert.IsTrue( R_width>0 , $"FAILED: R_width ({R_width}) > 0" );
+        Assert.IsTrue( r.width<=R_width , $"FAILED: r.width ({r.width}) > ({R_width})  R_width" );
+        Assert_IndexTranslate( r , rx , ry );
+    }
+    [Unity.Burst.BurstDiscard]
+    static void Assert_IndexTranslate ( RectInt r , int rx , int ry )
+    {
+        Assert.IsTrue( rx>=0 , $"FAILED: rx ({rx}) >= 0" );
+        Assert.IsTrue( ry>=0 , $"FAILED: ry ({ry}) >= 0" );
+
+        Assert.IsTrue( r.width>0 , $"FAILED: r.width ({r.width}) > 0" );
+        Assert.IsTrue( r.height>0 , $"FAILED: r.height ({r.height}) > 0" );
+        Assert.IsTrue( r.x>=0 , $"FAILED: r.x ({r.x}) >= 0" );
+        Assert.IsTrue( r.y>=0 , $"FAILED: r.y ({r.y}) >= 0" );
+
+        Assert.IsTrue( rx>=0 && rx<r.width , $"FAILED: rx ({rx}) is out of bounds for {nameof(r)} ({r})" );
+        Assert.IsTrue( ry>=0 && ry<r.height , $"FAILED: ry ({ry}) is out of bounds for {nameof(r)} ({r})" );
+    }
+
+    [Unity.Burst.BurstDiscard]
+    static void Assert_Index1dTo2d ( int i , int width )
+    {
+        Assert.IsTrue( width>0 , $"FAILED: width ({width}) > 0" );
+        Assert.IsTrue( i>=0 , $"FAILED: i ({i}) >= 0" );
+        Assert.IsTrue( i<width , $"FAILED: {i} < {width}" );
+    }
+
+    [Unity.Burst.BurstDiscard]
+    static void Assert_Index2dTo1d ( int x , int y , int width )
+    {
+        Assert.IsTrue( width>0 , $"FAILED: width ({width}) > 0" );
+        Assert.IsTrue( x>=0 , $"FAILED: x ({x}) >= 0" );
+        Assert.IsTrue( y>=0 , $"FAILED: y ({y}) >= 0" );
+        Assert.IsTrue( x<width , $"FAILED: x ({x}) < ({width}) width" );
+        if( x!=0 )
+        {
+            Assert.IsTrue( (width%x)==0 , $"FAILED: width ({width}) % ({x}) x == 0" );
+            Assert.IsTrue( y<(width/x) , $"FAILED: y ({y}) < width ({width}) / ({x}) x" );
+        }
+    }
+
+    #endif
 
 
     #endregion
