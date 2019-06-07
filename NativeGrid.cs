@@ -567,7 +567,7 @@ public abstract class NativeGrid
         Assert_IndexTranslate( r , rx , ry );
     }
     [Unity.Burst.BurstDiscard]
-    public static void Assert_IndexTranslate ( RectInt r , int rx , int ry )
+    static void Assert_IndexTranslate ( RectInt r , int rx , int ry )
     {
         Assert.IsTrue( rx>=0 , $"FAILED: rx ({rx}) >= 0" );
         Assert.IsTrue( ry>=0 , $"FAILED: ry ({ry}) >= 0" );
