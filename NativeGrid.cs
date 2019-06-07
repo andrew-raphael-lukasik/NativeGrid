@@ -7,8 +7,12 @@ using Unity.Mathematics;
 
 //TODO: jobify entire thing
 
+
+/// <summary>
+/// NativeGrid<STRUCT> is grid data layout class. Parent NativeGrid class is for static functions and nested types.
+/// </summary>
 public class NativeGrid <STRUCT>
-    : System.IDisposable
+    : NativeGrid,System.IDisposable
     where STRUCT : struct
 {
     #region FIELDS & PROPERTIES
@@ -162,9 +166,7 @@ public class NativeGrid <STRUCT>
     //     );
     // }
 
-    /// <summary>
-    /// Converts 2d to 1d array index
-    /// </summary>
+    /// <summary> Converts index 2d to 1d equivalent </summary>
     public int Index2dTo1d ( int x , int y )
     {
         #if DEBUG
@@ -173,52 +175,12 @@ public class NativeGrid <STRUCT>
         return y * width + x;
     }
     public int Index2dTo1d ( int2 index2d ) => Index2dTo1d( index2d.x , index2d.y );
-    public static int Index2dTo1d ( int x , int y , int width ) => y * width + x;
 
-
+    
     /// <summary> Converts 1d to 2d array index </summary>
     public int2 Index1dTo2d ( int i ) => new int2 { x=i%width , y=i/width };
-    public static int2 Index1dTo2d ( int i , int width ) => new int2{ x=i%width , y=i/width };
 
-
-    /// <summary> Translate regional coordinate to outer array index 1d </summary>
-    /// <param name="R">Outer RectInt</param>
-    /// <param name="r">Inner, smaller RectInt</param>
-    /// <param name="rx">Inner x coordinate</param>
-    /// <param name="ry">Inner y coordinate</param>
-    /// <param name="R_width">Outer RectInt.width</param>
-    public static int IndexTranslate ( RectInt r , int rx , int ry , int R_width ) => Index2dTo1d( r.x+rx , r.y+ry , R_width );
-
-    /// <summary> Translate regional coordinate to outer array index 1d </summary>
-    /// <param name="R">Outer RectInt</param>
-    /// <param name="r">Inner, smaller RectInt</param>
-    /// <param name="rx">Inner x coordinate</param>
-    /// <param name="ry">Inner y coordinate</param>
-    /// <param name="R_width">Outer RectInt.width</param>
-    public static int2 IndexTranslate ( RectInt r , int2 rxy ) => new int2{ x=r.x , y=r.y } + rxy;
-
-    /// <summary> Translate regional index to outer one </summary>
-    /// <param name="R">Outer RectInt</param>
-    /// <param name="r">Inner, smaller RectInt</param>
-    /// <param name="ri">Index in inner rect</param>
-    /// <param name="R_width">Outer RectInt.width</param>
-    public static int IndexTranslate ( RectInt r , int ri , int R_width )
-    {
-        int2 ri2d = Index1dTo2d( ri , r.width );
-        return IndexTranslate( r , ri2d.x , ri2d.y , R_width );
-    }
-
-
-    /// <summary> Determines whether index 2d is inside array bounds </summary>
-    public bool IsIndex2dValid ( int x , int y ) => IsIndex2dValid( x , y , width , height );
-    public static bool IsIndex2dValid ( int x , int y , int w , int h ) => x>=0 && x<w && y>=0 && y<h;
-
-    /// <summary> Determines whether index 1d is inside array bounds </summary>
-    public bool IsIndex1dValid ( int i ) => IsIndex1dValid( i , this.length );
-    public static bool IsIndex1dValid ( int i , int len ) => 0>=0 && i<len;
-
-
-
+    
     /// <summary> Transforms local position to cell index </summary>
     public bool LocalPointToIndex2d ( float3 localPoint , float spacing , out int2 result )
     {
@@ -235,9 +197,15 @@ public class NativeGrid <STRUCT>
     }
 
 
-    /// <summary>
-    /// Transforms index to local position.
-    /// </summary>
+    /// <summary> Determines whether index 2d is inside array bounds </summary>
+    public bool IsIndex2dValid ( int x , int y ) => IsIndex2dValid( x , y , width , height );
+
+
+    /// <summary> Determines whether index 1d is inside array bounds </summary>
+    public bool IsIndex1dValid ( int i ) => IsIndex1dValid( i , this.length );
+
+
+    /// <summary> Transforms index to local position. </summary>
     public float3 IndexToLocalPoint ( int x , int y , float spacing )
     {
         return new float3(
@@ -257,9 +225,7 @@ public class NativeGrid <STRUCT>
     }
 
 
-    /// <returns>
-    /// Rect center position 
-    /// </returns>
+    /// <returns> Rect center position </returns>
     public float3 IndexToLocalPoint ( int x , int y , int w , int h , float spacing )
     {
         float3 cornerA = IndexToLocalPoint( x , y , spacing );
@@ -268,9 +234,7 @@ public class NativeGrid <STRUCT>
     }
 
 
-    /// <summary>
-    /// Gets the surrounding type count.
-    /// </summary>
+    /// <summary> Gets the surrounding type count. </summary>
     public int GetSurroundingTypeCount ( int x , int y , IPredicate<STRUCT> predicate )
     {
         int result = 0;
@@ -290,9 +254,7 @@ public class NativeGrid <STRUCT>
     }
 
 
-    /// <summary>
-    /// Gets the surrounding field values
-    /// </summary>
+    /// <summary> Gets the surrounding field values </summary>
     /// <returns>
     /// 8-bit clockwise-enumerated bit values 
     /// 7 0 1           [x-1,y+1]  [x,y+1]  [x+1,y+1]
@@ -475,16 +437,77 @@ public class NativeGrid <STRUCT>
 
 
     public JobHandle Copy ( RectInt region , out NativeGrid<STRUCT> copy ) => Copy( this , region , out copy );
-    public static JobHandle Copy
-    (
-        NativeGrid<STRUCT> source ,
-        RectInt region ,
-        out NativeGrid<STRUCT> copy ,
-        JobHandle dependency = default(JobHandle)
-    )
+    
+
+    public void Dispose () => _values.Dispose();
+
+
+    #endregion
+}
+
+
+
+
+/// <summary> Abstract parent class for generic NativeGrid<STRUCT> to simplify referencing static functions wihin </summary>
+public abstract class NativeGrid
+{
+    #region PUBLIC METHODS
+
+
+    /// <summary> Converts 1d to 2d array index </summary>
+    public static int2 Index1dTo2d ( int i , int width ) => new int2{ x=i%width , y=i/width };
+
+
+    /// <summary> Translate regional coordinate to outer array index 1d </summary>
+    /// <param name="R">Outer RectInt</param>
+    /// <param name="r">Inner, smaller RectInt</param>
+    /// <param name="rx">Inner x coordinate</param>
+    /// <param name="ry">Inner y coordinate</param>
+    /// <param name="R_width">Outer RectInt.width</param>
+    public static int IndexTranslate ( RectInt r , int rx , int ry , int R_width ) => Index2dTo1d( r.x+rx , r.y+ry , R_width );
+
+    /// <summary> Translate regional coordinate to outer array index 1d </summary>
+    /// <param name="R">Outer RectInt</param>
+    /// <param name="r">Inner, smaller RectInt</param>
+    /// <param name="rx">Inner x coordinate</param>
+    /// <param name="ry">Inner y coordinate</param>
+    /// <param name="R_width">Outer RectInt.width</param>
+    public static int2 IndexTranslate ( RectInt r , int2 rxy ) => new int2{ x=r.x , y=r.y } + rxy;
+
+    /// <summary> Translate regional index to outer one </summary>
+    /// <param name="R">Outer RectInt</param>
+    /// <param name="r">Inner, smaller RectInt</param>
+    /// <param name="ri">Index in inner rect</param>
+    /// <param name="R_width">Outer RectInt.width</param>
+    public static int IndexTranslate ( RectInt r , int ri , int R_width )
     {
-        copy = new NativeGrid<STRUCT>( region.width , region.height , Allocator.TempJob );
-        var job = new CopyRegionJob<STRUCT>(
+        int2 ri2d = Index1dTo2d( ri , r.width );
+        return IndexTranslate( r , ri2d.x , ri2d.y , R_width );
+    }
+
+
+    /// <summary> Determines whether index 2d is inside array bounds </summary>
+    public static bool IsIndex2dValid ( int x , int y , int w , int h ) => x>=0 && x<w && y>=0 && y<h;
+
+
+    /// <summary> Determines whether index 1d is inside array bounds </summary>
+    public static bool IsIndex1dValid ( int i , int len ) => 0>=0 && i<len;
+
+
+    /// <summary> Converts index 2d to 1d equivalent </summary>
+    public static int Index2dTo1d ( int x , int y , int width ) => y * width + x;
+
+
+    public static JobHandle Copy <T>
+    (
+        NativeGrid<T> source ,
+        RectInt region ,
+        out NativeGrid<T> copy ,
+        JobHandle dependency = default(JobHandle)
+    ) where T : struct
+    {
+        copy = new NativeGrid<T>( region.width , region.height , Allocator.TempJob );
+        var job = new CopyRegionJob<T>(
             src: source.values ,
             dst: copy.values ,
             src_region: region ,
@@ -495,9 +518,6 @@ public class NativeGrid <STRUCT>
             JobHandle.CombineDependencies( source.writeAccess , dependency )
         );
     }
-    
-
-    public void Dispose () => _values.Dispose();
 
 
     #endregion
@@ -505,7 +525,7 @@ public class NativeGrid <STRUCT>
 
 
     [Unity.Burst.BurstCompile]
-    struct CopyRegionJob <T> : IJobParallelFor where T : struct
+    public struct CopyRegionJob <T> : IJobParallelFor where T : struct
     {
         [ReadOnly] NativeArray<T> src;
         [WriteOnly] NativeArray<T> dst;
@@ -522,7 +542,7 @@ public class NativeGrid <STRUCT>
     }
 
     [Unity.Burst.BurstCompile]
-    struct FillJob <T> : IJobParallelFor where T : struct
+    public struct FillJob <T> : IJobParallelFor where T : struct
     {
         [WriteOnly] NativeArray<T> array;
         readonly T value;
@@ -535,7 +555,7 @@ public class NativeGrid <STRUCT>
     }
 
     [Unity.Burst.BurstCompile]
-    struct FillRegionJob <T> : IJobParallelFor where T : struct
+    public struct FillRegionJob <T> : IJobParallelFor where T : struct
     {
         [WriteOnly][NativeDisableParallelForRestriction]
         NativeArray<T> array;
@@ -553,7 +573,7 @@ public class NativeGrid <STRUCT>
     }
 
     [Unity.Burst.BurstCompile]
-    struct FillBordersJob <T> : IJob where T : struct
+    public struct FillBordersJob <T> : IJob where T : struct
     {
         [WriteOnly][NativeDisableParallelForRestriction]
         NativeArray<T> array;
@@ -587,7 +607,7 @@ public class NativeGrid <STRUCT>
     }
 
     [Unity.Burst.BurstCompile]
-    struct ForEachActionJob <T> : IJobParallelFor where T : struct
+    public struct ForEachActionJob <T> : IJobParallelFor where T : struct
     {
         [ReadOnly] NativeArray<T> array;
         readonly IAction<T> action;
@@ -600,7 +620,7 @@ public class NativeGrid <STRUCT>
     }
 
     [Unity.Burst.BurstCompile]
-    struct ForEachIndexActionJob <T> : IJobParallelFor where T : struct
+    public struct ForEachIndexActionJob <T> : IJobParallelFor where T : struct
     {
         [ReadOnly] NativeArray<T> array;
         readonly IAction<int> action;
@@ -613,7 +633,7 @@ public class NativeGrid <STRUCT>
     }
 
     [Unity.Burst.BurstCompile]
-    struct ForEachIndex2dActionJob <T> : IJobParallelFor where T : struct
+    public struct ForEachIndex2dActionJob <T> : IJobParallelFor where T : struct
     {
         [ReadOnly] NativeArray<T> array;
         readonly int width;
@@ -632,7 +652,7 @@ public class NativeGrid <STRUCT>
     }
 
     [Unity.Burst.BurstCompile]
-    struct ForEachFuncJob <T> : IJobParallelFor where T : struct
+    public struct ForEachFuncJob <T> : IJobParallelFor where T : struct
     {
         [WriteOnly] NativeArray<T> array;
         readonly IFunc<T> func;
