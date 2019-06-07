@@ -448,7 +448,9 @@ public class NativeGrid <STRUCT>
 
 
 
-/// <summary> Abstract parent class for generic NativeGrid<STRUCT> to simplify referencing static functions wihin </summary>
+/// <summary>
+/// Abstract parent class for generic NativeGrid<STRUCT>. To simplify referencing static functions/types from "NativeGrid<byte>.Index1dTo2d(i)" to "NativeGrid.Index1dTo2d(i)".
+/// </summary>
 public abstract class NativeGrid
 {
     #region PUBLIC METHODS
