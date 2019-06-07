@@ -567,7 +567,7 @@ public abstract class NativeGrid
         Assert_IndexTranslate( r , rx , ry );
     }
     [Unity.Burst.BurstDiscard]
-    static void Assert_IndexTranslate ( RectInt r , int rx , int ry )
+    public static void Assert_IndexTranslate ( RectInt r , int rx , int ry )
     {
         Assert.IsTrue( rx>=0 , $"FAILED: rx ({rx}) >= 0" );
         Assert.IsTrue( ry>=0 , $"FAILED: ry ({ry}) >= 0" );
@@ -577,8 +577,8 @@ public abstract class NativeGrid
         Assert.IsTrue( r.x>=0 , $"FAILED: r.x ({r.x}) >= 0" );
         Assert.IsTrue( r.y>=0 , $"FAILED: r.y ({r.y}) >= 0" );
 
-        Assert.IsTrue( rx>=0 && rx<r.width , $"FAILED: rx ({rx}) is out of bounds for {nameof(r)} ({r})" );
-        Assert.IsTrue( ry>=0 && ry<r.height , $"FAILED: ry ({ry}) is out of bounds for {nameof(r)} ({r})" );
+        Assert.IsTrue( rx>=0 && rx<r.width , $"FAILED: rx ({rx}) is out of bounds for r ({r})" );
+        Assert.IsTrue( ry>=0 && ry<r.height , $"FAILED: ry ({ry}) is out of bounds for r ({r})" );
     }
 
     [Unity.Burst.BurstDiscard]
