@@ -595,11 +595,7 @@ public abstract class NativeGrid
         Assert.IsTrue( x>=0 , $"FAILED: x ({x}) >= 0" );
         Assert.IsTrue( y>=0 , $"FAILED: y ({y}) >= 0" );
         Assert.IsTrue( x<width , $"FAILED: x ({x}) < ({width}) width" );
-        if( x!=0 )
-        {
-            Assert.IsTrue( (width%x)==0 , $"FAILED: width ({width}) % ({x}) x == 0" );
-            Assert.IsTrue( y<(width/x) , $"FAILED: y ({y}) < width ({width}) / ({x}) x" );
-        }
+        if( x!=0 ) Assert.IsTrue( y<(width/x) , $"FAILED: y ({y}) < width ({width}) / ({x}) x" );
     }
 
     #endif
