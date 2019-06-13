@@ -16,7 +16,7 @@ using Unity.Mathematics;
 /// </summary>
 public class NativeGrid <STRUCT>
     : NativeGrid,System.IDisposable
-    where STRUCT : struct
+    where STRUCT : unmanaged
 {
     #region FIELDS & PROPERTIES
 
@@ -133,7 +133,7 @@ public class NativeGrid <STRUCT>
         int yStart = y;
         int xEnd = x + w;
         int yEnd = y + h;
-        if( onRectIsOutOfBounds!=null && ( xEnd > width || yEnd > height ) )
+        if( onRectIsOutOfBounds!=null && ( xEnd>width || yEnd>height ) )
         {
             onRectIsOutOfBounds.Execute(x,y);
         }
@@ -141,16 +141,10 @@ public class NativeGrid <STRUCT>
         {
             for( ; x<xEnd ; x++ )
             {
-                //Debug.Log( $"\t\t\tx={ x }" );
-                for( ; y < yEnd ; y++ )
-                {
-                    //Debug.Log( $"\t\t\ty={ y }" );
-                    action.Execute(x,y);
-                }
+                for( ; y<yEnd ; y++ ) action.Execute(x,y);
                 y = yStart;
             }
         }
-        //Debug.Log( $"\t\t\tended with xy: { x } { y }" );
     }
     //TODO: make this work with NativeGrid or remove:
     // public void ForEach ( int x , int y , int w , int h , IFunc<T,T> func )
@@ -537,7 +531,7 @@ public abstract class NativeGrid
         RectInt region ,
         out NativeGrid<T> copy ,
         JobHandle dependency = default(JobHandle)
-    ) where T : struct
+    ) where T : unmanaged
     {
         copy = new NativeGrid<T>( region.width , region.height , Allocator.TempJob );
         var job = new CopyRegionJob<T>(
@@ -550,6 +544,87 @@ public abstract class NativeGrid
             region.width*region.height , 1024 ,
             JobHandle.CombineDependencies( source.writeAccess , dependency )
         );
+    }
+
+
+    /// <summary>
+    /// Bresenham's line drawing algorithm (https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm).
+    /// </summary>
+    public System.Collections.Generic.IEnumerable<int2> BresenhamLine ( int2 A , int2 B )
+    {
+        int2 result = A;
+        int d, dx, dy, ai, bi, xi, yi;
+
+        if( A.x<B.x )
+        {
+            xi = 1;
+            dx = B.x - A.x;
+        }
+        else
+        {
+            xi = -1;
+            dx = A.x - B.x;
+        }
+        
+        if( A.y<B.y )
+        {
+            yi = 1;
+            dy = B.y - A.y;
+        }
+        else
+        {
+            yi = -1;
+            dy = A.y - B.y;
+        }
+        
+        yield return result;
+        
+        if( dx>dy )
+        {
+            ai = (dy - dx) * 2;
+            bi = dy * 2;
+            d = bi - dx;
+
+            while( result.x!=B.x )
+            {
+                if( d>=0 )
+                {
+                    result.x += xi;
+                    result.y += yi;
+                    d += ai;
+                }
+                else
+                {
+                    d += bi;
+                    result.x += xi;
+                }
+                
+                yield return result;
+            }
+        }
+        else
+        {
+            ai = ( dx - dy ) * 2;
+            bi = dx * 2;
+            d = bi - dy;
+            
+            while( result.y!=B.y )
+            {
+                if( d>=0 )
+                {
+                    result.x += xi;
+                    result.y += yi;
+                    d += ai;
+                }
+                else
+                {
+                    d += bi;
+                    result.y += yi;
+                }
+                
+                yield return result;
+            }
+        }
     }
 
 
