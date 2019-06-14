@@ -78,91 +78,6 @@ public class NativeGrid <STRUCT>
     #region PUBLIC METHODS
 
 
-    /// <summary> Executes for each grid cell </summary>
-    public void ForEach ( IAction<STRUCT> action )
-    {
-        int arrayLength = this.length;
-        for( int i=0 ; i < arrayLength ; i++ )
-        {
-            action.Execute( this._values[i] );
-        }
-    }
-    public void ForEach ( IPredicate<STRUCT> predicate , IAction<STRUCT> action )
-    {
-        int arrayLength = this.length;
-        for( int i=0 ; i < arrayLength ; i++ )
-        {
-            STRUCT cell = this._values[i];
-            if( predicate.Execute( cell )==true )
-            {
-                action.Execute( cell );
-            }
-        }
-    }
-    public JobHandle ForEach ( IFunc<STRUCT> func , JobHandle dependency = default(JobHandle) )
-    {
-        var job = new ForEachFuncJob<STRUCT>( _values , func );
-        return writeAccess = job.Schedule(
-            _values.Length , 1024 ,
-            JobHandle.CombineDependencies( dependency , writeAccess )
-        );
-    }
-    /// <param name="action"> argument is grid index1d </param>
-    public JobHandle ForEach ( IAction<int> action , JobHandle dependency = default(JobHandle) )
-    {
-        var job = new ForEachIndexActionJob<STRUCT>( _values , action );
-        return job.Schedule(
-            _values.Length , 1024 ,
-            JobHandle.CombineDependencies( writeAccess , dependency )
-        );
-    }
-    /// <param name="action"> arguments are grid index2d </param>
-    public JobHandle ForEach ( IAction<int,int> action , JobHandle dependency = default(JobHandle) )
-    {
-        var job = new ForEachIndex2dActionJob<STRUCT>( _values , width , action );
-        return job.Schedule(
-            _values.Length , 1024 ,
-            JobHandle.CombineDependencies( writeAccess , dependency )
-        );
-    }
-
-    /// <summary> For each in rectangle </summary>
-    /// <param name="action">'s 2 parameters are grid X and Y 2d indexes </param>
-    public void ForEach ( int x , int y , int w , int h , IAction<int,int> action , IAction<int,int> onRectIsOutOfBounds = null )
-    {
-        int yStart = y;
-        int xEnd = x + w;
-        int yEnd = y + h;
-        if( onRectIsOutOfBounds!=null && ( xEnd>width || yEnd>height ) )
-        {
-            onRectIsOutOfBounds.Execute(x,y);
-        }
-        else
-        {
-            for( ; x<xEnd ; x++ )
-            {
-                for( ; y<yEnd ; y++ ) action.Execute(x,y);
-                y = yStart;
-            }
-        }
-    }
-    //TODO: make this work with NativeGrid or remove:
-    // public void ForEach ( int x , int y , int w , int h , IFunc<T,T> func )
-    // {
-    //     ForEach(
-    //         x , y , w , h ,
-    //         (ax,ay) => (this)[ ax , ay ] = func.Execute( ( this )[ ax , ay ] )
-    //     );
-    // }
-    // /// <param name="action"> parameter provides 1d index </param>
-    // public void ForEach ( int x , int y , int w , int h , IAction<int> action )
-    // {
-    //     ForEach(
-    //         x , y , w , h ,
-    //         (ax,ay) => action.Execute( Index2dTo1d( ax , ay ) )
-    //     );
-    // }
-
     /// <summary> Converts index 2d to 1d equivalent </summary>
     public int Index2dTo1d ( int x , int y )
     {
@@ -231,26 +146,6 @@ public class NativeGrid <STRUCT>
     }
 
 
-    /// <summary> Gets the surrounding type count. </summary>
-    public int GetSurroundingTypeCount ( int x , int y , IPredicate<STRUCT> predicate )
-    {
-        int result = 0;
-        for( int neighbourX=x-1 ; neighbourX<=x+1 ; neighbourX++ )
-        for( int neighbourY=y-1 ; neighbourY<=y+1 ; neighbourY++ )
-        {
-            if( neighbourX>=0 && neighbourX<this.width && neighbourY>=0 && neighbourY<this.height )
-            {
-                if( neighbourX!=x || neighbourY!=y )
-                {
-                    result += predicate.Execute((this)[neighbourX,neighbourY]) ? 1 : 0;
-                }
-            }
-            else { result++; }
-        }
-        return result;
-    }
-
-
     /// <summary> Gets the surrounding field values </summary>
     /// <returns>
     /// 8-bit clockwise-enumerated bit values 
@@ -259,7 +154,7 @@ public class NativeGrid <STRUCT>
     /// 5 4 3           [x-1,y-1]  [x,y-1]  [x+1,y-1]
     /// for example: 1<<0 is top, 1<<1 is top-right, 1<<2 is right, 1<<6|1<<4|1<<2 is both left,down and right
     /// </returns>
-    public byte GetMarchingSquares ( int x , int y , IPredicate<STRUCT> predicate )
+    public byte GetMarchingSquares ( int x , int y )
     {
         const byte zero = 0b_0000_0000;
         byte result = zero;
@@ -271,109 +166,20 @@ public class NativeGrid <STRUCT>
         bool yMinus = y-1 >= 0;
 
         //top, down:
-        result |= yPlus && predicate.Execute( this[ x , y+1 ] ) ? (byte)0b_0000_0001 : zero;
-        result |= yMinus && predicate.Execute( this[ x , y-1 ] ) ? (byte)0b_0001_0000 : zero;
+        result |= yPlus ? (byte)0b_0000_0001 : zero;
+        result |= yMinus ? (byte)0b_0001_0000 : zero;
 
         //right side:
-        result |= xPlus && yPlus && predicate.Execute( this[ x+1 , y+1 ] ) ? (byte)0b_0000_0010 : zero;
-        result |= xPlus && predicate.Execute( this[ x+1 , y ] ) ? (byte)0b_0000_0100 : zero;
-        result |= xPlus && yMinus && predicate.Execute( this[ x+1 , y-1 ] ) ? (byte)0b_0000_1000 : zero;
+        result |= xPlus ? (byte)0b_0000_0010 : zero;
+        result |= xPlus ? (byte)0b_0000_0100 : zero;
+        result |= xPlus ? (byte)0b_0000_1000 : zero;
 
         //left side:
-        result |= xMinus && yPlus && predicate.Execute( this[ x-1 , y+1 ] ) ? (byte)0b_0010_0000 : zero;
-        result |= xMinus && predicate.Execute( this[ x-1 , y ] )==true ? (byte)0b_0000_0100 : zero;
-        result |= xMinus && yMinus && predicate.Execute( this[ x-1 , y-1 ] ) ? (byte)0b_1000_0000 : zero;
+        result |= xMinus ? (byte)0b_0010_0000 : zero;
+        result |= xMinus ? (byte)0b_0000_0100 : zero;
+        result |= xMinus ? (byte)0b_1000_0000 : zero;
         
         return result;
-    }
-
-
-    //TODO: make this work with NativeGrid or remove:
-    // /// <summary>
-    // /// AND operation on cells
-    // /// </summary>
-    // public bool TrueForEvery ( int x , int y , int w , int h , IPredicate<T> predicate , bool debug = false )
-    // {
-    //     bool result = true;
-    //     ForEach(
-    //         x , y , w , h ,
-    //         (ax,ay) =>
-    //         {
-    //             //debug next field:
-    //             if( debug==true )
-    //             {
-    //                 Debug.Log( $"\t\t{ ax }|{ ay } (debug = { debug })" );
-    //             }
-
-    //             //evaluate next field:
-    //             if( predicate.Execute( ( this )[ ax , ay ] )==false )
-    //             {
-    //                 result = false;
-    //                 return;
-    //             }
-
-    //         } ,
-    //         (ax,ay) =>
-    //         {
-    //             //debug on out of bounds:
-    //             if( debug==true )
-    //             {
-    //                 Debug.Log( string.Format( "\t\trect[{0},{1},{2},{3}] is out of grid bounds" , ax , ay , w , h ) );
-    //             }
-
-    //             //exe on out of bounds:
-    //             result = false;
-    //             return;
-    //         }
-    //     );
-    //     return result;
-    // }
-
-    //TODO: make this work with NativeGrid or remove:
-    // /// <summary>
-    // /// OR operation on cells
-    // /// </summary>
-    // public bool TrueForAny ( int x , int y , int w , int h , IPredicate<T> predicate )
-    // {
-    //     bool result = false;
-    //     ForEach(
-    //         x , y , w , h ,
-    //         (ax,ay) =>
-    //         {
-    //             if( predicate.Execute( ( this )[ ax , ay ] )==true )
-    //             {
-    //                 result = true;
-    //                 return;
-    //             }
-    //         }
-    //     );
-    //     return result;
-    // }
-
-
-    /// <summary>
-    /// Smooth operation
-    /// TODO: Test!
-    /// </summary>
-    public void Smooth
-    (
-        int iterations ,
-        IPredicate<STRUCT> countNeighbours ,
-        IFunc<STRUCT,STRUCT> overThreshold ,
-        IFunc<STRUCT,STRUCT> belowThreshold ,
-        IFunc<STRUCT,STRUCT> equalsThreshold ,
-        int threshold = 4
-    )
-    {
-        for( int i=0 ; i<iterations ; i++ )
-        for( int x=0 ; x<width ; x++ )
-        for( int y=0 ; y<height ; y++ )
-        {
-            int neighbourWallTiles = GetSurroundingTypeCount( x , y , countNeighbours );
-            if( neighbourWallTiles > threshold ) { ( this )[ x , y ] = overThreshold.Execute( ( this )[ x , y ] ); }
-            else if( neighbourWallTiles < threshold ) { ( this )[ x , y ] = belowThreshold.Execute( ( this )[ x , y ] ); }
-            else { ( this )[ x , y ] = equalsThreshold.Execute( ( this )[ x , y ] ); }
-        }
     }
 
 
@@ -395,33 +201,6 @@ public class NativeGrid <STRUCT>
             region.width*region.height , 1024 ,
             JobHandle.CombineDependencies( dependency , writeAccess )
         );
-    }
-    public void Fill ( IPredicate<STRUCT> predicate , STRUCT fill )
-    {
-        int length = this.length;
-        for( int i=0 ; i<length ; i++ )
-            if( predicate.Execute(_values[i])==true )
-                _values[i] = fill;
-    }
-    public void Fill ( IFunc<STRUCT> fillFunc )
-    {
-        int length = this.length;
-        for( int i=0 ; i<length ; i++ )
-            _values[i] = fillFunc.Execute();
-    }
-    /// <param name="fillFunc"> int params are x and y cordinates (index 2d)</param>
-    public void Fill ( IFunc<int,int,STRUCT> fillFunc )
-    {
-        for( int x=0 ; x<width ; x++ )
-            for( int y=0 ; y<height ; y++ )
-                ( this )[ x , y ] = fillFunc.Execute(x,y);
-    }
-    /// <param name="fillFunc"> int param is index 1d </param>
-    public void Fill ( IFunc<int,STRUCT> fillFunc )
-    {
-        int length = this.length;
-        for( int i=0 ; i<length ; i++ )
-            _values[i] = fillFunc.Execute( i );
     }
 
     
@@ -547,10 +326,38 @@ public abstract class NativeGrid
     }
 
 
-    /// <summary>
-    /// Bresenham's line drawing algorithm (https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm).
-    /// </summary>
-    public System.Collections.Generic.IEnumerable<int2> BresenhamLine ( int2 A , int2 B )
+    /// <summary> Point from 2d indices </summary>
+    public static float2 Index2dToPoint ( int x , int y , float stepX , float stepY ) => new float2{ x=(float)x*stepX , y=(float)y*stepY };
+
+
+    /// <summary> Value at point </summary>
+    public static T PointToValue <T> ( float2 point , float2 worldSize , NativeArray<T> array , int width , int height ) where T : unmanaged
+    {
+        return array[ PointToIndex( point , worldSize , width , height ) ];
+    }
+
+
+    /// <summary> Index from point </summary>
+    public static int PointToIndex ( float2 point , float2 worldSize , int width , int height )
+    {
+        int2 xy = PointToIndex2d( point , worldSize , width , height );
+        return Index2dTo1d( xy.x , xy.y , width );
+    }
+
+
+    /// <summary> Index 2d from point </summary>
+    public static int2 PointToIndex2d ( float2 point , float2 worldSize , int width , int height )
+    {
+        float2 clampedPoint = math.clamp( point , float2.zero , worldSize );
+        float2 len = clampedPoint / worldSize;
+        int2 whmax = new int2{ x=width-1 , y=height-1 };
+        return math.clamp( (int2)( len*whmax + new float2{x=0.5f,y=0.5f} ) , int2.zero , whmax );
+        // NOTE: Don't use math.round here - "The Round method follows the IEEE Standard 754, section 4 standard. This means that if the number being rounded is halfway between two numbers, the Round operation will always round to the even number" (https://www.oreilly.com/library/view/c-cookbook/0596003390/ch01s09.html)
+    }
+    
+
+    /// <summary> Bresenham's line drawing algorithm (https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm). </summary>
+    public static System.Collections.Generic.IEnumerable<int2> TraceLine ( int2 A , int2 B )
     {
         int2 result = A;
         int d, dx, dy, ai, bi, xi, yi;
@@ -680,7 +487,7 @@ public abstract class NativeGrid
 
 
     [Unity.Burst.BurstCompile]
-    public struct CopyRegionJob <T> : IJobParallelFor where T : struct
+    public struct CopyRegionJob <T> : IJobParallelFor where T : unmanaged
     {
         [ReadOnly] NativeArray<T> src;
         [WriteOnly] NativeArray<T> dst;
@@ -697,7 +504,7 @@ public abstract class NativeGrid
     }
 
     [Unity.Burst.BurstCompile]
-    public struct FillJob <T> : IJobParallelFor where T : struct
+    public struct FillJob <T> : IJobParallelFor where T : unmanaged
     {
         [WriteOnly] NativeArray<T> array;
         readonly T value;
@@ -710,7 +517,7 @@ public abstract class NativeGrid
     }
 
     [Unity.Burst.BurstCompile]
-    public struct FillRegionJob <T> : IJobParallelFor where T : struct
+    public struct FillRegionJob <T> : IJobParallelFor where T : unmanaged
     {
         [WriteOnly][NativeDisableParallelForRestriction]
         NativeArray<T> array;
@@ -728,7 +535,7 @@ public abstract class NativeGrid
     }
 
     [Unity.Burst.BurstCompile]
-    public struct FillBordersJob <T> : IJob where T : struct
+    public struct FillBordersJob <T> : IJob where T : unmanaged
     {
         [WriteOnly][NativeDisableParallelForRestriction]
         NativeArray<T> array;
@@ -760,81 +567,6 @@ public abstract class NativeGrid
             }
         }
     }
-
-    [Unity.Burst.BurstCompile]
-    public struct ForEachActionJob <T> : IJobParallelFor where T : struct
-    {
-        [ReadOnly] NativeArray<T> array;
-        readonly IAction<T> action;
-        public ForEachActionJob ( NativeArray<T> array , IAction<T> action )
-        {
-            this.array = array;
-            this.action = action;
-        }
-        void IJobParallelFor.Execute ( int i ) => action.Execute( array[i] );
-    }
-
-    [Unity.Burst.BurstCompile]
-    public struct ForEachIndexActionJob <T> : IJobParallelFor where T : struct
-    {
-        [ReadOnly] NativeArray<T> array;
-        readonly IAction<int> action;
-        public ForEachIndexActionJob ( NativeArray<T> array , IAction<int> action )
-        {
-            this.array = array;
-            this.action = action;
-        }
-        void IJobParallelFor.Execute ( int i ) => action.Execute( i );
-    }
-
-    [Unity.Burst.BurstCompile]
-    public struct ForEachIndex2dActionJob <T> : IJobParallelFor where T : struct
-    {
-        [ReadOnly] NativeArray<T> array;
-        readonly int width;
-        readonly IAction<int,int> action;
-        public ForEachIndex2dActionJob ( NativeArray<T> array , int width , IAction<int,int> action )
-        {
-            this.array = array;
-            this.width = width;
-            this.action = action;
-        }
-        void IJobParallelFor.Execute ( int i )
-        {
-            int2 i2d = Index1dTo2d( i , width );
-            action.Execute( i2d.x , i2d.y );
-        }
-    }
-
-    [Unity.Burst.BurstCompile]
-    public struct ForEachFuncJob <T> : IJobParallelFor where T : struct
-    {
-        [WriteOnly] NativeArray<T> array;
-        readonly IFunc<T> func;
-        public ForEachFuncJob ( NativeArray<T> array , IFunc<T> func )
-        {
-            this.array = array;
-            this.func = func;
-        }
-        void IJobParallelFor.Execute ( int i ) => array[i] = func.Execute();
-    }
-
-
-    #endregion
-    #region INTERFACES
-
-
-    public interface IAction { void Execute(); }
-    public interface IAction <ARG0> { void Execute( ARG0 arg0 ); }
-    public interface IAction <ARG0,ARG1> { void Execute( ARG0 arg0 , ARG1 arg1 ); }
-
-    public interface IFunc <RESULT> { RESULT Execute(); }
-    public interface IFunc <ARG0,RESULT> { RESULT Execute( ARG0 arg0 ); }
-    public interface IFunc <ARG0,ARG1,RESULT> { RESULT Execute( ARG0 arg0 , ARG1 arg1 ); }
-
-    public interface IPredicate { bool Execute(); }
-    public interface IPredicate <ARG0> { bool Execute( ARG0 arg0 ); }
-    public interface IPredicate <ARG0,ARG1> { bool Execute( ARG0 arg0 , ARG1 arg1 ); }
 
 
     #endregion
