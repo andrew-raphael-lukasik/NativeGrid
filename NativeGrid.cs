@@ -352,7 +352,8 @@ public abstract class NativeGrid
         float2 len = clampedPoint / worldSize;
         int2 whmax = new int2{ x=width-1 , y=height-1 };
         return math.clamp( (int2)( len*whmax + new float2{x=0.5f,y=0.5f} ) , int2.zero , whmax );
-        // NOTE: Don't use math.round here - "The Round method follows the IEEE Standard 754, section 4 standard. This means that if the number being rounded is halfway between two numbers, the Round operation will always round to the even number" (https://www.oreilly.com/library/view/c-cookbook/0596003390/ch01s09.html)
+        // NOTE: We don't use math.round here as it rounds 0.5f to neareast EVEN number. Avoiding that makes some deterministic calculations simpler.
+        // "The Round method follows the IEEE Standard 754, section 4 standard. This means that if the number being rounded is halfway between two numbers, the Round operation will always round to the even number" (https://www.oreilly.com/library/view/c-cookbook/0596003390/ch01s09.html)
     }
     
 
