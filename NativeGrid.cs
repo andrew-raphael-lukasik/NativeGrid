@@ -8,9 +8,6 @@ using Unity.Jobs;
 using Unity.Mathematics;
 
 
-//TODO: jobify entire thing
-
-
 /// <summary>
 /// NativeGrid<STRUCT> is grid data layout class. Parent NativeGrid class is for static functions and nested types.
 /// </summary>
@@ -349,12 +346,16 @@ public abstract class NativeGrid
     public static int2 PointToIndex2d ( float2 point , float2 worldSize , int width , int height )
     {
         float2 clampedPoint = math.clamp( point , float2.zero , worldSize );
-        float2 len = clampedPoint / worldSize;
-        int2 whmax = new int2{ x=width-1 , y=height-1 };
-        return math.clamp( (int2)( len*whmax + new float2{x=0.5f,y=0.5f} ) , int2.zero , whmax );
-        // NOTE: We don't use math.round here as it rounds 0.5f to neareast EVEN number. Avoiding that makes some deterministic calculations simpler.
-        // "The Round method follows the IEEE Standard 754, section 4 standard. This means that if the number being rounded is halfway between two numbers, the Round operation will always round to the even number" (https://www.oreilly.com/library/view/c-cookbook/0596003390/ch01s09.html)
+        float2 normalized = clampedPoint / worldSize;
+        int2 lastIndex = new int2{ x=width-1 , y=height-1 };
+        return math.clamp( MidpointRoundingAwayFromZero(normalized*lastIndex) , int2.zero , lastIndex );
     }
+
+
+    public static int MidpointRoundingAwayFromZero ( float value ) => (int)( value + (value<0f ? -0.5f : 0.5f) );
+    public static float MidpointRoundingAwayFromZero ( float value , float step ) => (float)MidpointRoundingAwayFromZero( value/step ) * step;
+    public static int2 MidpointRoundingAwayFromZero ( float2 value ) => new int2{ x=(int)( value.x + ( value.x<0f ? -0.5f : 0.5f ) ) , y=(int)( value.y + ( value.y<0f ? -0.5f : 0.5f ) ) };
+    public static float2 MidpointRoundingAwayFromZero ( float2 value , float2 step ) => (float2)MidpointRoundingAwayFromZero( value/step ) * step;
     
 
     /// <summary> Bresenham's line drawing algorithm (https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm). </summary>
