@@ -348,7 +348,7 @@ public abstract class NativeGrid
         float2 clampedPoint = math.clamp( point , float2.zero , worldSize );
         float2 normalized = clampedPoint / worldSize;
         int2 lastIndex = new int2{ x=width-1 , y=height-1 };
-        return math.clamp( MidpointRoundingAwayFromZero(normalized*lastIndex) , int2.zero , lastIndex );
+        return MidpointRoundingAwayFromZero( normalized*lastIndex );
     }
 
 
