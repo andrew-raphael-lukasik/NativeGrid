@@ -151,7 +151,7 @@ public class NativeGrid <STRUCT>
     /// 5 4 3           [x-1,y-1]  [x,y-1]  [x+1,y-1]
     /// for example: 1<<0 is top, 1<<1 is top-right, 1<<2 is right, 1<<6|1<<4|1<<2 is both left,down and right
     /// </returns>
-    public byte GetMarchingSquares ( int x , int y )
+    public byte GetMarchingSquares ( int x , int y , System.Predicate<STRUCT> predicate )
     {
         const byte zero = 0b_0000_0000;
         byte result = zero;
@@ -163,18 +163,18 @@ public class NativeGrid <STRUCT>
         bool yMinus = y-1 >= 0;
 
         //top, down:
-        result |= yPlus ? (byte)0b_0000_0001 : zero;
-        result |= yMinus ? (byte)0b_0001_0000 : zero;
+        result |= yPlus && predicate(this[x,y+1]) ? (byte)0b_0000_0001 : zero;
+        result |= yMinus && predicate(this[x,y-1]) ? (byte)0b_0001_0000 : zero;
 
         //right side:
-        result |= xPlus ? (byte)0b_0000_0010 : zero;
-        result |= xPlus ? (byte)0b_0000_0100 : zero;
-        result |= xPlus ? (byte)0b_0000_1000 : zero;
+        result |= xPlus && yPlus && predicate(this[x+1,y+1]) ? (byte)0b_0000_0010 : zero;
+        result |= xPlus && predicate(this[x+1,y]) ? (byte)0b_0000_0100 : zero;
+        result |= xPlus && yMinus && predicate(this[x+1,y-1]) ? (byte)0b_0000_1000 : zero;
 
         //left side:
-        result |= xMinus ? (byte)0b_0010_0000 : zero;
-        result |= xMinus ? (byte)0b_0000_0100 : zero;
-        result |= xMinus ? (byte)0b_1000_0000 : zero;
+        result |= xMinus && yPlus && predicate(this[x-1,y+1]) ? (byte)0b_0010_0000 : zero;
+        result |= xMinus && predicate(this[x-1,y]) ? (byte)0b_0000_0100 : zero;
+        result |= xMinus && yMinus && predicate(this[x-1,y-1]) ? (byte)0b_1000_0000 : zero;
         
         return result;
     }
