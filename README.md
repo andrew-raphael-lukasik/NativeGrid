@@ -8,6 +8,7 @@ FEATURES:
 - Write your own jobs to read/write to grid.values using grid.writeAccess JobHandle (!)
 - Bresenham's line algorithm
 - You can process Texture2D without allocations by nesting it's native array inside NativeGrid<span><</span>RGB24<span>></span> (relevant structs: https://github.com/andrew-raphael-lukasik/RawTextureDataProcessingExamples)
+- Marching squares method (neighbours to byte)
 
 TODO:
 - continue ideas started with https://github.com/andrew-raphael-lukasik/GridT
