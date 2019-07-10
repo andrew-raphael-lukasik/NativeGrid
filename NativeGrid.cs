@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.Assertions;
 
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Mathematics;
 
@@ -487,6 +488,48 @@ public abstract class NativeGrid
     #endregion
     #region JOBS
 
+
+    public unsafe struct CopyJob <T> : IJob where T : unmanaged
+    {
+        [ReadOnly] NativeArray<T> src;
+        void* dst;
+        public CopyJob ( NativeArray<T> src , void* dst )
+        {
+            this.src = src;
+            this.dst = dst;
+        }
+        unsafe void IJob.Execute ()
+        {
+            //ASSERTION: sizeof(SRC)==sizeof(DST)
+            UnsafeUtility.MemCpy(
+                dst ,
+                NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks( src ) ,
+                src.Length * (long)UnsafeUtility.SizeOf<T>()
+            );
+        }
+    }
+
+    public struct CopyJob <SRC,DST> : IJob
+        where SRC : unmanaged
+        where DST : unmanaged
+    {
+        [ReadOnly] NativeArray<SRC> src;
+        [WriteOnly] NativeArray<DST> dst;
+        public CopyJob ( NativeArray<SRC> src , NativeArray<DST> dst )
+        {
+            this.src = src;
+            this.dst = dst;
+        }
+        unsafe void IJob.Execute ()
+        {
+            //ASSERTION: sizeof(SRC)==sizeof(DST)
+            UnsafeUtility.MemCpy(
+                NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks( dst ) ,
+                NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks( src ) ,
+                dst.Length * (long)UnsafeUtility.SizeOf<SRC>()
+            );
+        }
+    }
 
     [Unity.Burst.BurstCompile]
     public struct CopyRegionJob <T> : IJobParallelFor where T : unmanaged
