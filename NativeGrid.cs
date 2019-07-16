@@ -3,10 +3,10 @@
 using UnityEngine;
 using UnityEngine.Assertions;
 
+using Unity.Mathematics;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
-using Unity.Mathematics;
 
 
 /// <summary>
@@ -227,6 +227,95 @@ public class NativeGrid <STRUCT>
 /// </summary>
 public abstract class NativeGrid
 {
+    #region BURST SAFE
+
+
+    /// <summary>
+    /// Methods safely accessible from within Burst-compiled code (no assertions tho)
+    /// </summary>
+    [Unity.Burst.BurstCompile]
+    public abstract class BurstSafe
+    {
+        public static int2 Index1dTo2d ( int i , int width ) => new int2{ x=i%width , y=i/width };
+        public static int Index2dTo1d ( int x , int y , int width ) => y * width + x;
+        public static int IndexTranslate ( RectInt r , int rx , int ry , int R_width ) => BurstSafe.Index2dTo1d( r.x+rx , r.y+ry , R_width );
+        public static int2 IndexTranslate ( RectInt r , int2 rxy ) => new int2{ x=r.x , y=r.y } + rxy;
+        public static int IndexTranslate ( RectInt r , int ri , int R_width )
+        {
+            int2 ri2d = Index1dTo2d( ri , r.width );
+            return IndexTranslate( r , ri2d.x , ri2d.y , R_width );
+        }
+        public static bool IsIndex2dValid ( int x , int y , int w , int h ) => x>=0 && x<w && y>=0 && y<h;
+        public static bool IsIndex1dValid ( int i , int len ) => 0>=0 && i<len;
+        public static float2 Index2dToPoint ( int x , int y , float stepX , float stepY ) => new float2{ x=(float)x*stepX , y=(float)y*stepY };
+        public static T PointToValue <T> ( float2 point , float2 worldSize , NativeArray<T> array , int width , int height ) where T : unmanaged
+        {
+            return array[ BurstSafe.PointToIndex( point , worldSize , width , height ) ];
+        }
+        public static int PointToIndex ( float2 point , float2 worldSize , int width , int height )
+        {
+            int2 xy = BurstSafe.PointToIndex2d( point , worldSize , width , height );
+            return BurstSafe.Index2dTo1d( xy.x , xy.y , width );
+        }
+        public static int2 PointToIndex2d ( float2 point , float2 worldSize , int width , int height )
+        {
+            BurstSafe.GetPositionInsideCell( point , new int2{ x=width , y=height } , worldSize , out int2 lo , out int2 hi , out float2 f );
+            int2 index = new int2{
+                x = BurstSafe.AboutEqual( f.x , 1f ) ? hi.x : lo.x ,
+                y = BurstSafe.AboutEqual( f.y , 1f ) ? hi.y : lo.y
+            };
+            return math.clamp( index , 0 , new int2{ x=width-1 , y=height-1 } );
+        }
+        public static void GetPositionInsideCell
+        (
+            float point , int numCells , float worldSize ,
+            out int lowerCell , out int upperCell , out float normalizedPositionBetweenThoseTwoPoints
+        )
+        {
+            float cellSize = worldSize / (float)numCells;
+            float cellFraction = point / cellSize;
+            lowerCell = cellSize<0f ? (int)math.ceil( cellFraction ) : (int)math.floor( cellFraction );
+            upperCell = lowerCell<0 ? lowerCell-1 : lowerCell+1;
+            normalizedPositionBetweenThoseTwoPoints = ( point - (float)lowerCell*cellSize ) / cellSize;
+        }
+        public static void GetPositionInsideCell
+        (
+            float2 point , int2 numCells , float2 worldSize ,
+            out int2 lowerCell , out int2 upperCell , out float2 normalizedPositionBetweenThoseTwoPoints
+        )
+        {
+            BurstSafe.GetPositionInsideCell( point.x , numCells.x , worldSize.x , out int xlo , out int xhi , out float xf );
+            BurstSafe.GetPositionInsideCell( point.y , numCells.y , worldSize.y , out int ylo , out int yhi , out float yf );
+            lowerCell = new int2{ x=xlo , y=ylo };
+            upperCell = new int2{ x=xhi , y=yhi };
+            normalizedPositionBetweenThoseTwoPoints = new float2{ x=xf , y=yf };
+        }
+
+        /// <returns>
+        /// Result other than 0 means that this point lies directly on a border between two neighbouring cells.
+        /// And thus it must be determined to which of the cells this point will fall into. This method provides an index offset to solve just that.
+        /// </returns>
+        public static int IsPointBetweenCells ( float point , int width , float worldSize )
+        {
+            float cellSize = worldSize / (float)width;
+            float cellFraction = (point%cellSize) / cellSize;
+            bool isMiddlePoint = BurstSafe.AboutEqual( cellFraction , 1f );
+            return isMiddlePoint ? (point<0f?-1:1) : 0;
+        } 
+
+        public static bool AboutEqual ( double x , double y ) => math.abs(x-y) <= math.max( math.abs(x) , math.abs(y) ) * 1E-15;
+
+        /// <summary> System.Math.Round( value, System.MidpointRounding.AwayFromZero ) equivalent </summary>
+        public static int MidpointRoundingAwayFromZero ( float value ) => (int)( value + (value<0f ? -0.5f : 0.5f) );
+        /// <summary> System.Math.Round( value, System.MidpointRounding.AwayFromZero ) equivalent </summary>
+        public static float MidpointRoundingAwayFromZero ( float value , float step ) => (float)BurstSafe.MidpointRoundingAwayFromZero(value/step) * step;
+        /// <summary> System.Math.Round( value , System.MidpointRounding.AwayFromZero ) equivalent </summary>
+        public static int2 MidpointRoundingAwayFromZero ( float2 value ) => new int2{ x=BurstSafe.MidpointRoundingAwayFromZero(value.x) , y=BurstSafe.MidpointRoundingAwayFromZero(value.y) };
+        /// <summary> System.Math.Round( value, System.MidpointRounding.AwayFromZero ) equivalent </summary>
+        public static float2 MidpointRoundingAwayFromZero ( float2 value , float2 step ) => (float2)BurstSafe.MidpointRoundingAwayFromZero(value/step) * step;
+    }
+
+    #endregion
     #region PUBLIC METHODS
 
 
@@ -237,9 +326,10 @@ public abstract class NativeGrid
         Assert_Index1dTo2d( i , width );
         #endif
 
-        return new int2{ x=i%width , y=i/width };
+        return BurstSafe.Index1dTo2d( i , width );
     }
 
+    
 
     /// <summary> Converts index 2d to 1d equivalent </summary>
     public static int Index2dTo1d ( int x , int y , int width )
@@ -248,7 +338,7 @@ public abstract class NativeGrid
         Assert_Index2dTo1d( x , y , width );
         #endif
 
-        return y * width + x;
+        return BurstSafe.Index2dTo1d( x , y , width );
     }
 
 
@@ -279,7 +369,7 @@ public abstract class NativeGrid
         Assert_IndexTranslate( r , rxy.x , rxy.y );
         #endif
 
-        return new int2{ x=r.x , y=r.y } + rxy;
+        return BurstSafe.IndexTranslate( r , rxy );
     }
 
     /// <summary> Translate regional index to outer one </summary>
@@ -295,37 +385,15 @@ public abstract class NativeGrid
 
 
     /// <summary> Determines whether index 2d is inside array bounds </summary>
-    public static bool IsIndex2dValid ( int x , int y , int w , int h ) => x>=0 && x<w && y>=0 && y<h;
+    public static bool IsIndex2dValid ( int x , int y , int w , int h ) => BurstSafe.IsIndex2dValid( x , y , w , h );
 
 
     /// <summary> Determines whether index 1d is inside array bounds </summary>
-    public static bool IsIndex1dValid ( int i , int len ) => 0>=0 && i<len;
-
-
-    public static JobHandle Copy <T>
-    (
-        NativeGrid<T> source ,
-        RectInt region ,
-        out NativeGrid<T> copy ,
-        JobHandle dependency = default(JobHandle)
-    ) where T : unmanaged
-    {
-        copy = new NativeGrid<T>( region.width , region.height , Allocator.TempJob );
-        var job = new CopyRegionJob<T>(
-            src: source.values ,
-            dst: copy.values ,
-            src_region: region ,
-            src_width: source.width
-        );
-        return job.Schedule(
-            region.width*region.height , 1024 ,
-            JobHandle.CombineDependencies( source.writeAccess , dependency )
-        );
-    }
+    public static bool IsIndex1dValid ( int i , int len ) => BurstSafe.IsIndex1dValid( i , len );
 
 
     /// <summary> Point from 2d indices </summary>
-    public static float2 Index2dToPoint ( int x , int y , float stepX , float stepY ) => new float2{ x=(float)x*stepX , y=(float)y*stepY };
+    public static float2 Index2dToPoint ( int x , int y , float stepX , float stepY ) => BurstSafe.Index2dToPoint ( x , y , stepX , stepY );
 
 
     /// <summary> Value at point </summary>
@@ -338,26 +406,9 @@ public abstract class NativeGrid
     /// <summary> Index from point </summary>
     public static int PointToIndex ( float2 point , float2 worldSize , int width , int height )
     {
-        int2 xy = PointToIndex2d( point , worldSize , width , height );
+        int2 xy = BurstSafe.PointToIndex2d( point , worldSize , width , height );
         return Index2dTo1d( xy.x , xy.y , width );
     }
-
-
-    /// <summary> Index 2d from point </summary>
-    public static int2 PointToIndex2d ( float2 point , float2 worldSize , int width , int height )
-    {
-        float2 clampedPoint = math.clamp( point , float2.zero , worldSize );
-        float2 normalized = clampedPoint / worldSize;
-        int2 lastIndex = new int2{ x=width-1 , y=height-1 };
-        return MidpointRoundingAwayFromZero( normalized*lastIndex );
-    }
-
-
-    public static int MidpointRoundingAwayFromZero ( float value ) => (int)( value + (value<0f ? -0.5f : 0.5f) );
-    public static float MidpointRoundingAwayFromZero ( float value , float step ) => (float)MidpointRoundingAwayFromZero( value/step ) * step;
-    public static int2 MidpointRoundingAwayFromZero ( float2 value ) => new int2{ x=(int)( value.x + ( value.x<0f ? -0.5f : 0.5f ) ) , y=(int)( value.y + ( value.y<0f ? -0.5f : 0.5f ) ) };
-    public static float2 MidpointRoundingAwayFromZero ( float2 value , float2 step ) => (float2)MidpointRoundingAwayFromZero( value/step ) * step;
-    
 
     /// <summary> Bresenham's line drawing algorithm (https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm). </summary>
     public static System.Collections.Generic.IEnumerable<int2> TraceLine ( int2 A , int2 B )
@@ -488,6 +539,27 @@ public abstract class NativeGrid
     #endregion
     #region JOBS
 
+
+    public static JobHandle Copy <T>
+    (
+        NativeGrid<T> source ,
+        RectInt region ,
+        out NativeGrid<T> copy ,
+        JobHandle dependency = default(JobHandle)
+    ) where T : unmanaged
+    {
+        copy = new NativeGrid<T>( region.width , region.height , Allocator.TempJob );
+        var job = new CopyRegionJob<T>(
+            src: source.values ,
+            dst: copy.values ,
+            src_region: region ,
+            src_width: source.width
+        );
+        return job.Schedule(
+            region.width*region.height , 1024 ,
+            JobHandle.CombineDependencies( source.writeAccess , dependency )
+        );
+    }
 
     public unsafe struct CopyJob <T> : IJob where T : unmanaged
     {
