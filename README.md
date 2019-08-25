@@ -1,9 +1,9 @@
 # NativeGrid
-GOALs:
+GOALS:
 1. Create grid data class that works well with Unity.Jobs and ECS.
 2. No GC allocations outside DEBUG. It's not a NativeContainer tho (Im thinking about it but it's not decided yet)
 
-WARNING: this is work in progress, not production ready yet.
+WARNING: Not production ready, work in progress
 
 FEATURES:
 - Uses NativeArray<span><</span>STRUCT<span>></span>
