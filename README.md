@@ -1,12 +1,14 @@
 # NativeGrid
-GOAL: Create grid data class that works well with Unity.Jobs and ECS
+GOALs:
+1. Create grid data class that works well with Unity.Jobs and ECS. It's not a NativeContainer (Im thinking about it but it's not decided yet)
+2. No GC allocations outside DEBUG
 
-WARNING: this is work in progress, not everything is as it should yet
+WARNING: this is work in progress, not production ready yet.
 
 FEATURES:
-- Uses NativeArray<span><</span>STRUCT<span>></span> (no big GC allocations)
+- Uses NativeArray<span><</span>STRUCT<span>></span>
 - Write your own jobs to read/write to grid.values using grid.writeAccess JobHandle (!)
-- Bresenham's line algorithm
+- Bresenham's trace line algorithm
 - You can process Texture2D without allocations by nesting it's native array inside NativeGrid<span><</span>RGB24<span>></span> (relevant structs: https://github.com/andrew-raphael-lukasik/RawTextureDataProcessingExamples)
 - Marching squares method (neighbours to byte)
 
