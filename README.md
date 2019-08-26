@@ -20,3 +20,5 @@ TODO:
 - improve A* speed
 
 ![astar gif goes here](https://i.imgur.com/6uEQxQ7.gif)
+
+Test window available under: Test>NativeGrid>Pathfinding
