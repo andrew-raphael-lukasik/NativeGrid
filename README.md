@@ -1,7 +1,7 @@
 # NativeGrid
 GOALS:
 1. Create grid data class that works well with Unity.Jobs and ECS.
-2. No GC allocations outside DEBUG. It's not a NativeContainer tho (Im thinking about it but it's not decided yet)
+2. No GC allocations outside DEBUG. It's no NativeContainer tho.
 
 WARNING: Not production ready, work in progress
 
