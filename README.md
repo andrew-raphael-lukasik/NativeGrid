@@ -17,3 +17,6 @@ FEATURES:
 TODO:
 - continue ideas started with https://github.com/andrew-raphael-lukasik/GridT
 - make it more usefull
+- improve A* speed
+
+![astar gif goes here](https://i.imgur.com/6uEQxQ7.gif)
