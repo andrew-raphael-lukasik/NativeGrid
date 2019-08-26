@@ -6,7 +6,7 @@ GOALS:
 WARNING: Not production ready, work in progress
 
 FEATURES:
-- Uses NativeArray<span><</span>STRUCT<span>></span>
+- Uses NativeArray<span><</span>T<span>></span> where T : unmanaged
 - Write your own jobs to read/write to grid.values using grid.writeAccess JobHandle (!)
 - Bresenham's trace line algorithm
 - enumerate neighbouring cells, enumerate all cells along growing spiral-shaped path
