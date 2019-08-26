@@ -9,6 +9,8 @@ FEATURES:
 - Uses NativeArray<span><</span>STRUCT<span>></span>
 - Write your own jobs to read/write to grid.values using grid.writeAccess JobHandle (!)
 - Bresenham's trace line algorithm
+- enumerate neighbouring cells, enumerate all cells along growing spiral-shaped path
+- A*/AStar implementation
 - You can process Texture2D without allocations by nesting it's native array inside NativeGrid<span><</span>RGB24<span>></span> (relevant structs: https://github.com/andrew-raphael-lukasik/RawTextureDataProcessingExamples)
 - Marching squares method (neighbours to byte)
 
