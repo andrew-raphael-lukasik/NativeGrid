@@ -54,34 +54,33 @@ public abstract partial class NativeGrid
 
             int numWeights = weights.Length;
             int start1d = BurstSafe.Index2dTo1d( start , weightsWidth );
-            {
-                costs = new NativeArray<float>( numWeights , Allocator.TempJob , NativeArrayOptions.UninitializedMemory );
-                for( int i=costs.Length-1 ; i!=-1 ; i-- ) costs[i] = float.MaxValue;
-                costs[start1d] = 0;
-            }
-            {
-                solution = new NativeArray<int2>( numWeights , Allocator.TempJob );
-                solution[start1d] = start;
-            }
-            {
-                frontier = new NativeMinHeap<int2,MyComparer>(
-                    new MyComparer( costs , weightsWidth , destination ) ,
-                    Allocator.TempJob ,
-					numWeights
-                );
-                frontier.Push( start );
-            }
-            {
-                visited = new NativeHashMap<int2,byte>( numWeights , Allocator.TempJob );//TODO: use actual hashSet once available
-                visited.TryAdd( start , 0 );
-            }
-			{
-				neighbours = new NativeList<int2>( 100 , Allocator.TempJob );
-			}
+            costs = new NativeArray<float>( numWeights , Allocator.TempJob , NativeArrayOptions.UninitializedMemory );
+			solution = new NativeArray<int2>( numWeights , Allocator.TempJob );
+            frontier = new NativeMinHeap<int2,MyComparer>(
+                new MyComparer( costs , weightsWidth , destination ) ,
+                Allocator.TempJob ,
+				numWeights
+            );
+			visited = new NativeHashMap<int2,byte>( numWeights , Allocator.TempJob );//TODO: use actual hashSet once available
+            neighbours = new NativeList<int2>( 100 , Allocator.TempJob );
         }
         public void Execute ()
         {
             int numWeights = weights.Length;
+			int start1d = BurstSafe.Index2dTo1d( start , weightsWidth );
+            {
+                for( int i=costs.Length-1 ; i!=-1 ; i-- ) costs[i] = float.MaxValue;
+                costs[start1d] = 0;
+            }
+			{
+				solution[start1d] = start;
+			}
+			{
+				frontier.Push( start );
+			}
+			{
+                visited.TryAdd( start , 0 );
+            }
             
             //solve;
             float euclideanMaxLength = EuclideanHeuristicMaxLength( numWeights , weightsWidth );
