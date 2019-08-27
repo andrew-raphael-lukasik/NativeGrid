@@ -104,11 +104,17 @@ namespace Tests
         void SolvePath ()
         {
             //prepare data:
-            var weights = new NativeArray<float>( _numRows*_numRows , Allocator.Persistent );
-            for( int i=_numRows*_numRows-1 ; i!=-1 ; i-- )
-            {
-                weights[i] = _grid[i].style.backgroundColor.value.r;
-            }
+			NativeArray<float> weights;
+			{
+				int len = _numRows*_numRows;
+				weights = new NativeArray<float>( len , Allocator.Persistent );
+				float[] arr = new float[len];//NativeArray enumeration is slow outside Burst
+				for( int i=len-1 ; i!=-1 ; i-- )
+				{
+					arr[i] = _grid[i].style.backgroundColor.value.r;
+				}
+				weights.CopyFrom( arr );
+			}
 
             //calculate:
 			NativeList<int2> path;
