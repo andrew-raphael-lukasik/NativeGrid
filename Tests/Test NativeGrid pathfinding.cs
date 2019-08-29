@@ -14,7 +14,7 @@ namespace Tests
     {
 
         const float _pxSize = 512;
-        const int _numRows = 128;
+        int _resolution = 128;
         float2 _p1 = new float2{ x=0.1f , y=0.1f };
         float2 _p2 = new float2{ x=0.9f , y=0.9f };
         [SerializeField] float _elasticity = 1f;
@@ -25,18 +25,31 @@ namespace Tests
         public void OnEnable ()
         {
             var ROOT = rootVisualElement;
+            var GRID = new VisualElement();
 
-            var SLIDER = new Slider( $"Elasticity:" , 0f , 1f );
-            SLIDER.style.paddingLeft = SLIDER.style.paddingRight = 10;
-            SLIDER.value = _elasticity;
-            SLIDER.RegisterValueChangedCallback( (e)=> {
+            var RESOLUTION = new IntegerField( "Resolution:" );
+            RESOLUTION.value = _resolution;
+            RESOLUTION.RegisterValueChangedCallback( (e) => {
+                _resolution = math.clamp( e.newValue , 1 , 256 );
+                if( RESOLUTION.value!=_resolution )  RESOLUTION.value = _resolution;
+                GRID.Clear();
+                CreateGridLayout( GRID );
+                NewRandomMap();
+            } );
+            ROOT.Add( RESOLUTION );
+
+            // ELASTICITY:
+            var ELASTICITY = new Slider( $"Elasticity:" , 0f , 1f );
+            ELASTICITY.style.paddingLeft = ELASTICITY.style.paddingRight = 10;
+            ELASTICITY.value = _elasticity;
+            ELASTICITY.RegisterValueChangedCallback( (e)=> {
                 _elasticity = e.newValue;
                 NewRandomMap();
                 SolvePath();
             } );
-            ROOT.Add( SLIDER );
+            ROOT.Add( ELASTICITY );
 
-            var GRID = new ScrollView();//new VisualElement();
+            // GRID:
             var gridStyle = GRID.style;
             gridStyle.width = _pxSize;
             gridStyle.height = _pxSize;
@@ -48,10 +61,25 @@ namespace Tests
                 SolvePath();
             } );
             ROOT.Add( GRID );
+            CreateGridLayout( GRID );
 
-            float pxCell = _pxSize / (float)_numRows;
-            _grid = new VisualElement[ _numRows*_numRows ];
-            for( int i=0, y=0 ; y<_numRows ; y++ )
+            NewRandomMap();
+            SolvePath();
+        }
+
+        [MenuItem("Test/NativeGrid/Pathfinding")]
+        static void ShowWindow ()
+        {
+            var window = GetWindow<Test_NativeGrid_pathfinding>();
+            window.titleContent = new GUIContent("Test NativeGrid pathfinding");
+            window.minSize = window.maxSize = new Vector2{ x=_pxSize+4 , y=_pxSize+4+60 };
+        }
+
+        void CreateGridLayout ( VisualElement GRID )
+        {
+            float pxCell = _pxSize / (float)_resolution;
+            _grid = new VisualElement[ _resolution*_resolution ];
+            for( int i=0, y=0 ; y<_resolution ; y++ )
             {
                 var ROW = new VisualElement();
                 var rowStyle = ROW.style;
@@ -59,7 +87,7 @@ namespace Tests
                 rowStyle.width = _pxSize;
                 rowStyle.height = pxCell;
 
-                for( int x=0 ; x<_numRows ; x++, i++ )
+                for( int x=0 ; x<_resolution ; x++, i++ )
                 {
                     var CELL = new VisualElement();
                     var cellStyle = CELL.style;
@@ -72,24 +100,13 @@ namespace Tests
                 
                 GRID.Add( ROW );
             }
-
-            NewRandomMap();
-            SolvePath();
-        }
-
-        [MenuItem("Test/NativeGrid/Pathfinding")]
-        static void ShowWindow ()
-        {
-            var window = GetWindow<Test_NativeGrid_pathfinding>();
-            window.titleContent = new GUIContent("Test NativeGrid pathfinding");
-            window.minSize = window.maxSize = new Vector2{ x=_pxSize+4 , y=_pxSize+4+20 };
         }
 
         void NewRandomMap ()
         {
-            float frac = 1f / (float)_numRows;
-            for( int i=0, y=0 ; y<_numRows ; y++ )
-            for( int x=0 ; x<_numRows ; x++, i++ )
+            float frac = 1f / (float)_resolution;
+            for( int i=0, y=0 ; y<_resolution ; y++ )
+            for( int x=0 ; x<_resolution ; x++, i++ )
             {
                 float fx = (float)x * frac * 4f + _offset;
                 float fy = (float)y * frac * 4f + _offset;
@@ -104,45 +121,45 @@ namespace Tests
         void SolvePath ()
         {
             //prepare data:
-			NativeArray<float> weights;
-			{
-				int len = _numRows*_numRows;
-				weights = new NativeArray<float>( len , Allocator.Persistent );
-				float[] arr = new float[len];//NativeArray enumeration is slow outside Burst
-				for( int i=len-1 ; i!=-1 ; i-- )
-				{
-					arr[i] = _grid[i].style.backgroundColor.value.r;
-				}
-				weights.CopyFrom( arr );
-			}
+            NativeArray<float> weights;
+            {
+                int len = _resolution*_resolution;
+                weights = new NativeArray<float>( len , Allocator.Persistent );
+                float[] arr = new float[len];//NativeArray enumeration is slow outside Burst
+                for( int i=len-1 ; i!=-1 ; i-- )
+                {
+                    arr[i] = _grid[i].style.backgroundColor.value.r;
+                }
+                weights.CopyFrom( arr );
+            }
 
             //calculate:
-			NativeList<int2> path;
+            NativeList<int2> path;
             {
-				#if DEBUG
-				var watch = System.Diagnostics.Stopwatch.StartNew();
-				#endif
+                #if DEBUG
+                var watch = System.Diagnostics.Stopwatch.StartNew();
+                #endif
 
-				path = new NativeList<int2>( _numRows , Allocator.TempJob );
-				var job = new NativeGrid.AStarJob(
-					(int2)( _p1 * _numRows ) , (int2)( _p2 * _numRows ) ,
-					weights , _numRows ,
-					path ,
-					_elasticity
-				);
-				job.Run();
-				job.Dispose();
+                path = new NativeList<int2>( _resolution , Allocator.TempJob );
+                var job = new NativeGrid.AStarJob(
+                    (int2)( _p1 * _resolution ) , (int2)( _p2 * _resolution ) ,
+                    weights , _resolution ,
+                    path ,
+                    _elasticity
+                );
+                job.Run();
+                job.Dispose();
 
-				#if DEBUG
-				watch.Stop();
-				Debug.Log($"{nameof(NativeGrid.AStarJob)} took {watch.ElapsedMilliseconds} ms");
-				#endif
-			}
+                #if DEBUG
+                watch.Stop();
+                Debug.Log($"{nameof(NativeGrid.AStarJob)} took {watch.ElapsedMilliseconds} ms");
+                #endif
+            }
 
             //visualize:
             foreach( var i2 in path )
             {
-                int i = NativeGrid.BurstSafe.Index2dTo1d( i2 , _numRows );
+                int i = NativeGrid.BurstSafe.Index2dTo1d( i2 , _resolution );
                 var style = _grid[i].style;
                 Color col = style.backgroundColor.value;
                 col.b = 1f;
