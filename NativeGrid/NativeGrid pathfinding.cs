@@ -148,8 +148,8 @@ public abstract partial class NativeGrid
     }
     
 
-    static float EuclideanHeuristic ( INT2 a , INT2 b ) => math.length( a-b );
-    static float EuclideanHeuristicNormalized ( INT2 a , INT2 b , float maxLength ) => math.length( a-b ) / maxLength;
+    static float EuclideanHeuristic ( INT2 a , INT2 b ) => math.lengthsq( a-b );
+    static float EuclideanHeuristicNormalized ( INT2 a , INT2 b , float maxLength ) => math.lengthsq( a-b ) / (maxLength*maxLength);
     static float EuclideanHeuristicMaxLength ( int arrayLength , int arrayWidth ) => EuclideanHeuristic( int2.zero , new int2{ x=arrayWidth-1 , y=arrayLength/arrayWidth-1 } );
 
     static void BacktrackToPath ( NativeArray<int2> solution , int solutionWidth , INT2 destination , NativeList<int2> path )
