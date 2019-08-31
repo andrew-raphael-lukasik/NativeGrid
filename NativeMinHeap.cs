@@ -43,21 +43,40 @@ public unsafe struct NativeMinHeap <VALUE,COMPARER>
 
     public void Clear () => _stack.Clear();
 
-    void MinHeapifyUp ( int index )
+    void MinHeapifyUp ( int childIndex )
     {
-        if( index==0 ) return;
+        if( childIndex==0 ) return;
 
-        int childIndex = index;
-        int parentIndex = (index-1)/2;
+        int parentIndex = (childIndex-1)/2;
 
-        if( _comparer->Compare( _stack[childIndex] , _stack[parentIndex])<0 )
+        VALUE childVal = _stack[childIndex];
+        VALUE parentVal = _stack[parentIndex];
+
+        if( _comparer->Compare(childVal,parentVal)<0 )
         {
             // swap the parent and the child
-            VALUE temp = _stack[childIndex];
-            _stack[childIndex] = _stack[parentIndex];
-            _stack[parentIndex] = temp;
+            _stack[childIndex] = parentVal;
+            _stack[parentIndex] = childVal;
 
-            MinHeapifyUp( parentIndex );
+            MinHeapifyUp2( parentIndex , childVal );
+        }
+    }
+    /// one memory read less
+    void MinHeapifyUp2 ( int childIndex , VALUE childVal )
+    {
+        if( childIndex==0 ) return;
+
+        int parentIndex = (childIndex-1)/2;
+
+        VALUE parentVal = _stack[parentIndex];
+
+        if( _comparer->Compare(childVal,parentVal)<0 )
+        {
+            // swap the parent and the child
+            _stack[childIndex] = parentVal;
+            _stack[parentIndex] = childVal;
+
+            MinHeapifyUp2( parentIndex , parentVal );
         }
     }
 
