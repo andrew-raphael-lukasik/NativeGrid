@@ -139,8 +139,8 @@ public abstract partial class NativeGrid
 				int lhs1d = BurstSafe.Index2dTo1d( lhs , _width );
 				int rhs1d = BurstSafe.Index2dTo1d( rhs , _width );
 				
-				float lhsCost = UnsafeUtility.ReadArrayElement<float>( _costsArrayPtr , lhs1d ) + EuclideanHeuristic( lhs , _dest );
-				float rhsCost = UnsafeUtility.ReadArrayElement<float>( _costsArrayPtr , rhs1d ) + EuclideanHeuristic( rhs , _dest );
+				float lhsCost = UnsafeUtility.ReadArrayElement<float>( _costsArrayPtr , lhs1d );// + EuclideanHeuristic( lhs , _dest );
+				float rhsCost = UnsafeUtility.ReadArrayElement<float>( _costsArrayPtr , rhs1d );// + EuclideanHeuristic( rhs , _dest );
 				
 				return lhsCost.CompareTo(rhsCost);
             }
