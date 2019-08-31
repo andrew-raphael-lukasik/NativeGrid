@@ -155,6 +155,7 @@ public abstract partial class NativeGrid
     static void BacktrackToPath ( NativeArray<int2> solution , int solutionWidth , INT2 destination , NativeList<int2> path )
     {
         path.Clear();
+        if( path.Capacity<solutionWidth*2 ) path.Capacity = solutionWidth*2;//preallocate for reasonably common/bad scenario
         int solutionLength = solution.Length;
 
         int2 pos = destination;
