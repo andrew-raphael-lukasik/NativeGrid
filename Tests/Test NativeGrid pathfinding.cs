@@ -17,10 +17,13 @@ namespace Tests
         int _resolution = 128;
         float2 _p1 = new float2{ x=0.1f , y=0.1f };
         float2 _p2 = new float2{ x=0.9f , y=0.9f };
-        [SerializeField] float _elasticity = 1f;
-        [SerializeField] float _offset = 0f;
-
+        float _heuristic = 20f;
+        float _offset = 0f;
+        bool _drawCosts;
         VisualElement[] _grid;
+
+        const int _drawTextMaxResolution = 50;
+        bool labelsExist => _resolution<=_drawTextMaxResolution;
 
         public void OnEnable ()
         {
@@ -28,6 +31,7 @@ namespace Tests
             var GRID = new VisualElement();
 
             var RESOLUTION = new IntegerField( "Resolution:" );
+            RESOLUTION.style.paddingLeft = RESOLUTION.style.paddingRight = 10;
             RESOLUTION.value = _resolution;
             RESOLUTION.RegisterValueChangedCallback( (e) => {
                 _resolution = math.clamp( e.newValue , 1 , 256 );
@@ -38,16 +42,16 @@ namespace Tests
             } );
             ROOT.Add( RESOLUTION );
 
-            // ELASTICITY:
-            var ELASTICITY = new Slider( $"Elasticity:" , 0f , 1f );
-            ELASTICITY.style.paddingLeft = ELASTICITY.style.paddingRight = 10;
-            ELASTICITY.value = _elasticity;
-            ELASTICITY.RegisterValueChangedCallback( (e)=> {
-                _elasticity = e.newValue;
+            // HEURISTIC:
+            var HEURISTIC = new FloatField( $"Euclidean Heuristic Multiplier:" );
+            HEURISTIC.style.paddingLeft = HEURISTIC.style.paddingRight = 10;
+            HEURISTIC.value = _heuristic;
+            HEURISTIC.RegisterValueChangedCallback( (e)=> {
+                _heuristic = e.newValue;
                 NewRandomMap();
                 SolvePath();
             } );
-            ROOT.Add( ELASTICITY );
+            ROOT.Add( HEURISTIC );
 
             // GRID:
             var gridStyle = GRID.style;
@@ -94,6 +98,16 @@ namespace Tests
                     cellStyle.width = pxCell;
                     cellStyle.height = pxCell;
 
+                    if( labelsExist )
+                    {
+                        var LABEL = new Label("00");
+                        LABEL.visible = false;
+                        var style = LABEL.style;
+                        style.fontSize = pxCell/5;
+                        style.alignSelf = Align.Stretch;
+                        CELL.Add( LABEL );
+                    }
+
                     ROW.Add( CELL );
                     _grid[i] = CELL;
                 }
@@ -114,6 +128,7 @@ namespace Tests
                 float noise2 = math.pow( Mathf.PerlinNoise(fx*2.3f,fy*2.3f) , 3f );
                 float noise3 = math.pow( Mathf.PerlinNoise(fx*14f,fy*14f) , 6f ) * (1f-noise1) * (1f-noise2);
                 float noiseSum = math.pow( noise1 + noise2*0.3f + noise3*0.08f , 0.6f );
+                noiseSum = noiseSum * noiseSum * noiseSum;
                 _grid[i].style.backgroundColor = new Color{ r=noiseSum , g=noiseSum , b=noiseSum , a=1f };
             }
         }
@@ -121,53 +136,92 @@ namespace Tests
         void SolvePath ()
         {
             //prepare data:
-            NativeArray<float> weights;
+            NativeArray<float> moveCost;
             {
                 int len = _resolution*_resolution;
-                weights = new NativeArray<float>( len , Allocator.Persistent );
+                moveCost = new NativeArray<float>( len , Allocator.TempJob );
                 float[] arr = new float[len];//NativeArray enumeration is slow outside Burst
                 for( int i=len-1 ; i!=-1 ; i-- )
                 {
                     arr[i] = _grid[i].style.backgroundColor.value.r;
                 }
-                weights.CopyFrom( arr );
+                moveCost.CopyFrom( arr );
             }
 
             //calculate:
             NativeList<int2> path;
+            float[] debug_G;
+            int2[] visited;
             {
+                path = new NativeList<int2>( _resolution , Allocator.TempJob );
+
                 #if DEBUG
                 var watch = System.Diagnostics.Stopwatch.StartNew();
                 #endif
 
-                path = new NativeList<int2>( _resolution , Allocator.TempJob );
+                //run job:
                 var job = new NativeGrid.AStarJob(
                     (int2)( _p1 * _resolution ) , (int2)( _p2 * _resolution ) ,
-                    weights , _resolution ,
+                    moveCost , _resolution ,
                     path ,
-                    _elasticity
+                    _heuristic
                 );
                 job.Run();
-                job.Dispose();
 
                 #if DEBUG
                 watch.Stop();
                 Debug.Log($"{nameof(NativeGrid.AStarJob)} took {watch.ElapsedMilliseconds} ms");
                 #endif
+
+                // copy debug data:
+                debug_G = job._G_.ToArray();
+                using( var arr = job.visited.GetKeyArray( Allocator.Temp ) ) visited = arr.ToArray();
+
+                //dispose unmanaged arrays:
+                job.Dispose();
             }
 
             //visualize:
             foreach( var i2 in path )
             {
                 int i = NativeGrid.BurstSafe.Index2dTo1d( i2 , _resolution );
-                var style = _grid[i].style;
-                Color col = style.backgroundColor.value;
+                var CELL = _grid[i];
+                
+                var cellStyle = CELL.style;
+                Color col = cellStyle.backgroundColor.value;
+                col.r = 1f;
+                cellStyle.backgroundColor = col;
+            }
+            if( labelsExist )
+            for( int i=debug_G.Length-1 ; i!=-1 ; i-- )
+            {
+                var CELL = _grid[i];
+                Label LABEL = CELL[0] as Label;
+
+                var g = debug_G[i];
+                if( g!=float.MaxValue )
+                {
+                    LABEL.text = $"g:{g:0.0}";
+                    LABEL.visible = true;
+                }
+                else
+                {
+                    LABEL.visible = false;
+                }
+            }
+            foreach( var i2 in visited )
+            {
+                int i = NativeGrid.BurstSafe.Index2dTo1d( i2 , _resolution );
+                var CELL = _grid[i];
+                
+                var cellStyle = CELL.style;
+                Color col = cellStyle.backgroundColor.value;
                 col.b = 1f;
-                style.backgroundColor = col;
+                cellStyle.backgroundColor = col;
             }
 
             //dispose data:
-            weights.Dispose();
+            moveCost.Dispose();
             path.Dispose();
         }
 
