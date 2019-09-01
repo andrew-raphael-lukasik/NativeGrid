@@ -14,13 +14,14 @@ namespace Tests
     {
 
         const float _pxSize = 512;
+        VisualElement[] _grid;
         int _resolution = 128;
+        float _offset = 0f;
+
         float2 _p1 = new float2{ x=0.1f , y=0.1f };
         float2 _p2 = new float2{ x=0.9f , y=0.9f };
-        float _heuristic = 20f;
-        float _offset = 0f;
-        bool _drawCosts;
-        VisualElement[] _grid;
+        float heuristic_cost = 0.001f;
+        float heuristic_search = 20f;
 
         const int _drawTextMaxResolution = 50;
         bool labelsExist => _resolution<=_drawTextMaxResolution;
@@ -42,16 +43,27 @@ namespace Tests
             } );
             ROOT.Add( RESOLUTION );
 
-            // HEURISTIC:
-            var HEURISTIC = new FloatField( $"Euclidean Heuristic Multiplier:" );
-            HEURISTIC.style.paddingLeft = HEURISTIC.style.paddingRight = 10;
-            HEURISTIC.value = _heuristic;
-            HEURISTIC.RegisterValueChangedCallback( (e)=> {
-                _heuristic = e.newValue;
+            // HEURISTIC COST:
+            var HEURISTIC_COST = new FloatField( $"Heuristic Cost:" );
+            HEURISTIC_COST.style.paddingLeft = HEURISTIC_COST.style.paddingRight = 10;
+            HEURISTIC_COST.value = heuristic_cost;
+            HEURISTIC_COST.RegisterValueChangedCallback( (e)=> {
+                heuristic_cost = e.newValue;
                 NewRandomMap();
                 SolvePath();
             } );
-            ROOT.Add( HEURISTIC );
+            ROOT.Add( HEURISTIC_COST );
+
+            // HEURISTIC COST:
+            var HEURISTIC_SEARCH = new FloatField( $"Heuristic Search:" );
+            HEURISTIC_SEARCH.style.paddingLeft = HEURISTIC_SEARCH.style.paddingRight = 10;
+            HEURISTIC_SEARCH.value = heuristic_search;
+            HEURISTIC_SEARCH.RegisterValueChangedCallback( (e)=> {
+                heuristic_search = e.newValue;
+                NewRandomMap();
+                SolvePath();
+            } );
+            ROOT.Add( HEURISTIC_SEARCH );
 
             // GRID:
             var gridStyle = GRID.style;
@@ -127,8 +139,7 @@ namespace Tests
                 float noise1 = Mathf.PerlinNoise( fx , fy );
                 float noise2 = math.pow( Mathf.PerlinNoise(fx*2.3f,fy*2.3f) , 3f );
                 float noise3 = math.pow( Mathf.PerlinNoise(fx*14f,fy*14f) , 6f ) * (1f-noise1) * (1f-noise2);
-                float noiseSum = math.pow( noise1 + noise2*0.3f + noise3*0.08f , 0.6f );
-                noiseSum = noiseSum * noiseSum * noiseSum;
+                float noiseSum = math.pow( noise1 + noise2*0.3f + noise3*0.08f , 3.6f );
                 _grid[i].style.backgroundColor = new Color{ r=noiseSum , g=noiseSum , b=noiseSum , a=1f };
             }
         }
@@ -139,7 +150,7 @@ namespace Tests
             NativeArray<float> moveCost;
             {
                 int len = _resolution*_resolution;
-                moveCost = new NativeArray<float>( len , Allocator.TempJob );
+                moveCost = new NativeArray<float>( len , Allocator.TempJob , NativeArrayOptions.UninitializedMemory );
                 float[] arr = new float[len];//NativeArray enumeration is slow outside Burst
                 for( int i=len-1 ; i!=-1 ; i-- )
                 {
@@ -150,7 +161,7 @@ namespace Tests
 
             //calculate:
             NativeList<int2> path;
-            float[] debug_G;
+            float[] debug_F;
             int2[] visited;
             {
                 path = new NativeList<int2>( _resolution , Allocator.TempJob );
@@ -163,8 +174,9 @@ namespace Tests
                 var job = new NativeGrid.AStarJob(
                     (int2)( _p1 * _resolution ) , (int2)( _p2 * _resolution ) ,
                     moveCost , _resolution ,
-                    path ,
-                    _heuristic
+                    heuristic_cost ,
+                    heuristic_search ,
+                    path
                 );
                 job.Run();
 
@@ -174,7 +186,7 @@ namespace Tests
                 #endif
 
                 // copy debug data:
-                debug_G = job._G_.ToArray();
+                debug_F = job._F_.ToArray();
                 using( var arr = job.visited.GetKeyArray( Allocator.Temp ) ) visited = arr.ToArray();
 
                 //dispose unmanaged arrays:
@@ -193,15 +205,15 @@ namespace Tests
                 cellStyle.backgroundColor = col;
             }
             if( labelsExist )
-            for( int i=debug_G.Length-1 ; i!=-1 ; i-- )
+            for( int i=debug_F.Length-1 ; i!=-1 ; i-- )
             {
                 var CELL = _grid[i];
                 Label LABEL = CELL[0] as Label;
 
-                var g = debug_G[i];
-                if( g!=float.MaxValue )
+                var f = debug_F[i];
+                if( f!=float.MaxValue )
                 {
-                    LABEL.text = $"g:{g:0.0}";
+                    LABEL.text = $"f:{f:0.000}";
                     LABEL.visible = true;
                 }
                 else

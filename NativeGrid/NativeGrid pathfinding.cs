@@ -18,7 +18,6 @@ public abstract partial class NativeGrid
     
     /// <summary> An Astar solving job </summary>
     /// Format weights to 0.0 to 1.0 range. Heuristic can cease to work otherwise.
-    /// Elasticity range is 0.0 to 1.0. Where 0.0 produces straight lines and positive values produces less costly, winding paths.
     [Unity.Burst.BurstCompile]
     public struct AStarJob : IJob, System.IDisposable
     {
@@ -27,9 +26,10 @@ public abstract partial class NativeGrid
         [ReadOnly] NativeArray<float> moveCost;
         int moveCost_width;
         NativeList<int2> path;
-        float heuristic_multiplier;
+        float heuristic_cost;
+        float heuristic_search;
 
-        public NativeArray<float> _G_;
+        public NativeArray<float> _F_;
         public NativeArray<int2> solution;
         NativeMinHeap<int2,MyComparer> frontier;
         public NativeHashMap<int2,byte> visited;
@@ -41,8 +41,9 @@ public abstract partial class NativeGrid
             INT2 destination ,
             NativeArray<float> moveCost ,
             int moveCost_width ,
-            NativeList<int2> output_path ,
-            float heuristic_multiplier
+            float heuristic_cost ,
+            float heuristic_search ,
+            NativeList<int2> output_path
         )
         {
             this.start = start;
@@ -50,16 +51,16 @@ public abstract partial class NativeGrid
             this.moveCost = moveCost;
             this.moveCost_width = moveCost_width;
             this.path = output_path;
-            this.heuristic_multiplier = heuristic_multiplier;
+            this.heuristic_cost = heuristic_cost;
+            this.heuristic_search = heuristic_search;
 
             int length = moveCost.Length;
             int start1d = BurstSafe.Index2dTo1d( start , moveCost_width );
-            _G_ = new NativeArray<float>( length , Allocator.TempJob , NativeArrayOptions.UninitializedMemory );
+            _F_ = new NativeArray<float>( length , Allocator.TempJob , NativeArrayOptions.UninitializedMemory );
 			solution = new NativeArray<int2>( length , Allocator.TempJob );
             frontier = new NativeMinHeap<int2,MyComparer>(
-                new MyComparer( _G_ , moveCost_width , destination , heuristic_multiplier ) ,
-                Allocator.TempJob ,
-				length
+                new MyComparer( _F_ , moveCost_width , destination , heuristic_search ) ,
+                Allocator.TempJob , length
             );
 			visited = new NativeHashMap<int2,byte>( length , Allocator.TempJob );//TODO: use actual hashSet once available
             neighbours = new NativeList<int2>( 8 , Allocator.TempJob );
@@ -69,8 +70,8 @@ public abstract partial class NativeGrid
             int length = moveCost.Length;
 			int start1d = BurstSafe.Index2dTo1d( start , moveCost_width );
             {
-                for( int i=_G_.Length-1 ; i!=-1 ; i-- ) _G_[i] = float.MaxValue;
-                _G_[start1d] = 0;
+                for( int i=_F_.Length-1 ; i!=-1 ; i-- ) _F_[i] = float.MaxValue;
+                _F_[start1d] = 0;
             }
 			{
 				solution[start1d] = start;
@@ -84,30 +85,34 @@ public abstract partial class NativeGrid
             
             //solve;
             float euclideanMaxLength = EuclideanHeuristicMaxLength( length , moveCost_width );
-            int2 parent = int2.zero-1;
-            while( frontier.Count!=0 && math.any(parent!=destination) )
+            int2 node = int2.zero-1;
+            while( frontier.Count!=0 && math.any(node!=destination) )
             {
-                parent = frontier.Pop();//we grab candidate with lowest F so far
-                int parent1d = BurstSafe.Index2dTo1d( parent , moveCost_width );
-                float parent_g = _G_[parent1d];
+                node = frontier.Pop();//we grab candidate with lowest F so far
+                int node1d = BurstSafe.Index2dTo1d( node , moveCost_width );
+                float node_f = _F_[node1d];
 
-                //lest check all his neighbours:
-				EnumerateNeighbours( neighbours , moveCost_width , moveCost_width , parent );
+                //lets check all its neighbours:
+				EnumerateNeighbours( neighbours , moveCost_width , moveCost_width , node );
 				int neighboursLength = neighbours.Length;
                 for( int i=0 ; i<neighboursLength ; i++ )
                 {
 					int2 neighbour = neighbours[i];
                     int neighbour1d = BurstSafe.Index2dTo1d( neighbour , moveCost_width );
-
-                    float g = parent_g + moveCost[neighbour1d];
                     
-                    //update G when this connection is less costly:
+                    bool isOrthogonal = math.any( node==neighbour );//is relative position orthogonal or diagonal
+
+                    float g = node_f + moveCost[neighbour1d]*( isOrthogonal ? 1f : 1.41421356237f );
+                    float h = EuclideanHeuristicNormalized( neighbour , destination , euclideanMaxLength )*heuristic_cost;
+                    float f = g + h;
+                    
+                    //update F when this connection is less costly:
                     if(
-                        g<_G_[neighbour1d]
+                        f<_F_[neighbour1d]
                     )
                     {
-                        _G_[neighbour1d] = g;
-                        solution[neighbour1d] = parent;
+                        _F_[neighbour1d] = f;
+                        solution[neighbour1d] = node;
                     }
 
                     //update frontier:
@@ -123,7 +128,7 @@ public abstract partial class NativeGrid
         }
         public void Dispose ()
         {
-            _G_.Dispose();
+            _F_.Dispose();
             solution.Dispose();
             frontier.Dispose();
             visited.Dispose();
@@ -131,16 +136,16 @@ public abstract partial class NativeGrid
         }
         unsafe struct MyComparer : IComparerInt2
         {
-			void* _G_Ptr;
+			void* _F_Ptr;
 			int _width;
 			int2 _dest;
-            float heuristic_multiplier;
-			public MyComparer ( NativeArray<float> _G_ , int weightsWidth , INT2 destination , float heuristic_multiplier )
+            float heuristic_search;
+			public MyComparer ( NativeArray<float> _G_ , int weightsWidth , INT2 destination , float heuristic_search )
             {
-                this._G_Ptr = NativeArrayUnsafeUtility.GetUnsafeReadOnlyPtr( _G_ );
+                this._F_Ptr = NativeArrayUnsafeUtility.GetUnsafeReadOnlyPtr( _G_ );
 				this._width = weightsWidth;
 				this._dest = destination;
-                this.heuristic_multiplier = heuristic_multiplier;
+                this.heuristic_search = heuristic_search;
             }
             int IComparerInt2.Compare ( int2 lhs , int2 rhs )
             {
@@ -149,8 +154,8 @@ public abstract partial class NativeGrid
 				
                 float euclideanHeuristicMaxLength = EuclideanHeuristicMaxLength(_width*_width,_width);
                 
-				float lhs_g = UnsafeUtility.ReadArrayElement<float>( _G_Ptr , lhs1d ) + (EuclideanHeuristic( lhs , _dest )/euclideanHeuristicMaxLength)*heuristic_multiplier;
-				float rhs_g = UnsafeUtility.ReadArrayElement<float>( _G_Ptr , rhs1d ) + (EuclideanHeuristic( rhs , _dest )/euclideanHeuristicMaxLength)*heuristic_multiplier;
+				float lhs_g = UnsafeUtility.ReadArrayElement<float>( _F_Ptr , lhs1d ) + EuclideanHeuristicNormalized(lhs,_dest,euclideanHeuristicMaxLength)*heuristic_search;
+				float rhs_g = UnsafeUtility.ReadArrayElement<float>( _F_Ptr , rhs1d ) + EuclideanHeuristicNormalized(rhs,_dest,euclideanHeuristicMaxLength)*heuristic_search;
 
 				return lhs_g.CompareTo(rhs_g);
             }

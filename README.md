@@ -19,6 +19,6 @@ TODO:
 - make it more usefull
 - improve A* speed
 
-![astar gif goes here](https://i.imgur.com/np3guuA.gif)
+![astar gif goes here](https://i.imgur.com/vW5bVeQ.gif)
 
 Test window available under: Test>NativeGrid>Pathfinding
