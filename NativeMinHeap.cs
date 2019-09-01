@@ -58,25 +58,7 @@ public unsafe struct NativeMinHeap <VALUE,COMPARER>
             _stack[childIndex] = parentVal;
             _stack[parentIndex] = childVal;
 
-            MinHeapifyUp2( parentIndex , childVal );
-        }
-    }
-    /// one memory read less
-    void MinHeapifyUp2 ( int childIndex , VALUE childVal )
-    {
-        if( childIndex==0 ) return;
-
-        int parentIndex = (childIndex-1)/2;
-
-        VALUE parentVal = _stack[parentIndex];
-
-        if( _comparer->Compare(childVal,parentVal)<0 )
-        {
-            // swap the parent and the child
-            _stack[childIndex] = parentVal;
-            _stack[parentIndex] = childVal;
-
-            MinHeapifyUp2( parentIndex , parentVal );
+            MinHeapifyUp( parentIndex );
         }
     }
 
