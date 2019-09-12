@@ -15,12 +15,13 @@ public abstract partial class NativeGrid
 {
     #region PUBLIC METHODS
 
-    
-    /// <summary> An Astar solving job </summary>
+
+    /// <summary> Traces path using some kind of A* algorithm </summary>
     /// Format weights to 0.0 to 1.0 range. Heuristic can cease to work otherwise.
     [Unity.Burst.BurstCompile]
     public struct AStarJob : IJob, System.IDisposable
     {
+
         INT2 start;
         INT2 destination;
         [ReadOnly] NativeArray<float> moveCost;
@@ -35,6 +36,14 @@ public abstract partial class NativeGrid
         public NativeHashMap<int2,byte> visited;
 		public NativeList<int2> neighbours;
 
+        /// <summary> Traces path using some kind of A* algorithm </summary>
+        /// <param name="start"> Start index 2d </param>
+        /// <param name="destination"> Destination index 2d </param>
+        /// <param name="moveCost"> Move cost data 2d array </param>
+        /// <param name="moveCost_width"> 2d array's width </param>
+        /// <param name="heuristic_cost"> Cost heuristic multiplier. Figure out yourself what value works best for your specific moveCost data </param>
+        /// <param name="heuristic_search"> Search heuristic multiplier. Figure out yourself what value works best for your specific moveCost data </param>
+        /// <param name="output_path"> Resulting path goes here </param>
         public unsafe AStarJob
         (
             INT2 start ,
