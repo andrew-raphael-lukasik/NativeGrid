@@ -22,11 +22,13 @@ public abstract partial class NativeGrid
     public struct AStarJob : IJob, System.IDisposable
     {
 
+        /// <summary> Job results goes here. List of indices to form a path. </summary>
+        public NativeList<int2> Results;
+
         INT2 start;
         INT2 destination;
         [ReadOnly] NativeArray<float> moveCost;
         int moveCost_width;
-        NativeList<int2> path;
         float heuristic_cost;
         float heuristic_search;
 
@@ -34,7 +36,7 @@ public abstract partial class NativeGrid
         public NativeArray<int2> solution;
         NativeMinHeap<int2,MyComparer> frontier;
         public NativeHashMap<int2,byte> visited;
-		public NativeList<int2> neighbours;
+		NativeList<int2> neighbours;
 
         /// <summary> Traces path using some kind of A* algorithm </summary>
         /// <param name="start"> Start index 2d </param>
@@ -59,7 +61,7 @@ public abstract partial class NativeGrid
             this.destination = destination;
             this.moveCost = moveCost;
             this.moveCost_width = moveCost_width;
-            this.path = output_path;
+            this.Results = output_path;
             this.heuristic_cost = heuristic_cost;
             this.heuristic_search = heuristic_search;
 
@@ -133,7 +135,7 @@ public abstract partial class NativeGrid
             }
 
             //create path:
-            BacktrackToPath( solution , moveCost_width , destination , path );
+            BacktrackToPath( solution , moveCost_width , destination , Results );
         }
         public void Dispose ()
         {
