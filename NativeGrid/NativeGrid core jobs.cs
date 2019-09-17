@@ -33,7 +33,7 @@ public abstract partial class NativeGrid
 		);
 		return job.Schedule(
 			region.width*region.height , 1024 ,
-			JobHandle.CombineDependencies( source.WriteAccess , dependency )
+			JobHandle.CombineDependencies( source.Dependency , dependency )
 		);
 	}
 

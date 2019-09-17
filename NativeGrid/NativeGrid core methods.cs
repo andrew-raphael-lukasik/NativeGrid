@@ -140,9 +140,9 @@ public partial class NativeGrid <STRUCT>
 	public JobHandle Fill ( STRUCT value , JobHandle dependency = default(JobHandle) )
 	{
 		var job = new FillJob<STRUCT>( array:_values , value:value );
-		return WriteAccess = job.Schedule(
+		return Dependency = job.Schedule(
 			_values.Length , 1024 ,
-			JobHandle.CombineDependencies( dependency , WriteAccess )
+			JobHandle.CombineDependencies( dependency , Dependency )
 		);
 	}
 
@@ -150,9 +150,9 @@ public partial class NativeGrid <STRUCT>
 	public JobHandle Fill ( RectInt region , STRUCT value , JobHandle dependency = default(JobHandle) )
 	{
 		var job = new FillRegionJob<STRUCT>( region:region , array:this._values , value:value , array_width:this.Width );
-		return WriteAccess = job.Schedule(
+		return Dependency = job.Schedule(
 			region.width*region.height , 1024 ,
-			JobHandle.CombineDependencies( dependency , WriteAccess )
+			JobHandle.CombineDependencies( dependency , Dependency )
 		);
 	}
 
@@ -161,7 +161,7 @@ public partial class NativeGrid <STRUCT>
 	public JobHandle FillBorders ( STRUCT fill , JobHandle dependency = default(JobHandle) )
 	{
 		var job = new FillBordersJob<STRUCT>( array:_values , width:Width , height:Height , fill:fill );
-		return WriteAccess = job.Schedule( JobHandle.CombineDependencies(dependency,WriteAccess) );
+		return Dependency = job.Schedule( JobHandle.CombineDependencies(dependency,Dependency) );
 	}
 
 

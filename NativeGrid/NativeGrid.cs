@@ -23,7 +23,9 @@ public partial class NativeGrid <STRUCT>
 	public readonly int Height;
 	public readonly int Length;
 	public bool IsCreated => _values.IsCreated;
-	public JobHandle WriteAccess = default(JobHandle);
+	public JobHandle Dependency = default(JobHandle);
+
+    [System.Obsolete("Rename to: 'Dependency'")] public JobHandle WriteAccess { get => Dependency; set => Dependency = value; }
 
 
 	#endregion
@@ -52,20 +54,20 @@ public partial class NativeGrid <STRUCT>
 
 	public STRUCT this [ int i ]
 	{
-		get { WriteAccess.Complete(); return _values[i]; }
-		set { WriteAccess.Complete(); _values[i] = value; }
+		get { Dependency.Complete(); return _values[i]; }
+		set { Dependency.Complete(); _values[i] = value; }
 	}
 
 	public STRUCT this [ int x , int y ]
 	{
-		get { WriteAccess.Complete(); return _values[Index2dTo1d(x,y)]; }
-		set { WriteAccess.Complete(); _values[Index2dTo1d(x,y)] = value; }
+		get { Dependency.Complete(); return _values[Index2dTo1d(x,y)]; }
+		set { Dependency.Complete(); _values[Index2dTo1d(x,y)] = value; }
 	}
 
 	public STRUCT this [ INT2 i2 ]
 	{
-		get { WriteAccess.Complete(); return _values[Index2dTo1d(i2)]; }
-		set { WriteAccess.Complete(); _values[Index2dTo1d(i2)] = value; }
+		get { Dependency.Complete(); return _values[Index2dTo1d(i2)]; }
+		set { Dependency.Complete(); _values[Index2dTo1d(i2)] = value; }
 	}
 
 
