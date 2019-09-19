@@ -34,7 +34,7 @@ public abstract partial class NativeGrid
 
 		public NativeArray<float> _F_;
 		public NativeArray<int2> solution;
-		NativeMinHeap<int2,MyComparer> frontier;
+		NativeMinHeap<int2,AStarJobComparer> frontier;
 		public NativeHashMap<int2,byte> visited;
 		NativeList<int2> neighbours;
 
@@ -69,8 +69,8 @@ public abstract partial class NativeGrid
 			int start1d = BurstSafe.Index2dTo1d( start , moveCost_width );
 			_F_ = new NativeArray<float>( length , Allocator.TempJob , NativeArrayOptions.UninitializedMemory );
 			solution = new NativeArray<int2>( length , Allocator.TempJob );
-			frontier = new NativeMinHeap<int2,MyComparer>(
-				new MyComparer( _F_ , moveCost_width , destination , heuristic_search ) ,
+			frontier = new NativeMinHeap<int2,AStarJobComparer>(
+				new AStarJobComparer( _F_ , moveCost_width , destination , heuristic_search ) ,
 				Allocator.TempJob , length
 			);
 			visited = new NativeHashMap<int2,byte>( length , Allocator.TempJob );//TODO: use actual hashSet once available
@@ -145,40 +145,42 @@ public abstract partial class NativeGrid
 			visited.Dispose();
 			neighbours.Dispose();
 		}
-		unsafe struct MyComparer : IComparerInt2
-		{
-			void* _F_Ptr;
-			int _width;
-			int2 _dest;
-			float heuristic_search;
-			public MyComparer ( NativeArray<float> _G_ , int weightsWidth , INT2 destination , float heuristic_search )
-			{
-				this._F_Ptr = NativeArrayUnsafeUtility.GetUnsafeReadOnlyPtr( _G_ );
-				this._width = weightsWidth;
-				this._dest = destination;
-				this.heuristic_search = heuristic_search;
-			}
-			int IComparerInt2.Compare ( int2 lhs , int2 rhs )
-			{
-				int lhs1d = BurstSafe.Index2dTo1d( lhs , _width );
-				int rhs1d = BurstSafe.Index2dTo1d( rhs , _width );
-				
-				float euclideanHeuristicMaxLength = EuclideanHeuristicMaxLength(_width*_width,_width);
-				
-				float lhs_g = UnsafeUtility.ReadArrayElement<float>( _F_Ptr , lhs1d ) + EuclideanHeuristicNormalized(lhs,_dest,euclideanHeuristicMaxLength)*heuristic_search;
-				float rhs_g = UnsafeUtility.ReadArrayElement<float>( _F_Ptr , rhs1d ) + EuclideanHeuristicNormalized(rhs,_dest,euclideanHeuristicMaxLength)*heuristic_search;
-
-				return lhs_g.CompareTo(rhs_g);
-			}
-		}
 	}
 	
 
-	static float EuclideanHeuristic ( INT2 a , INT2 b ) => math.length( a-b );
-	static float EuclideanHeuristicNormalized ( INT2 a , INT2 b , float maxLength ) => math.length( a-b ) / maxLength;
-	static float EuclideanHeuristicMaxLength ( int arrayLength , int arrayWidth ) => EuclideanHeuristic( int2.zero , new int2{ x=arrayWidth-1 , y=arrayLength/arrayWidth-1 } );
+	public unsafe struct AStarJobComparer : IComparerInt2
+	{
+		void* _F_Ptr;
+		int _width;
+		int2 _dest;
+		float heuristic_search;
+		public AStarJobComparer ( NativeArray<float> _G_ , int weightsWidth , INT2 destination , float heuristic_search )
+		{
+			this._F_Ptr = NativeArrayUnsafeUtility.GetUnsafeReadOnlyPtr( _G_ );
+			this._width = weightsWidth;
+			this._dest = destination;
+			this.heuristic_search = heuristic_search;
+		}
+		int IComparerInt2.Compare ( int2 lhs , int2 rhs )
+		{
+			int lhs1d = BurstSafe.Index2dTo1d( lhs , _width );
+			int rhs1d = BurstSafe.Index2dTo1d( rhs , _width );
+			
+			float euclideanHeuristicMaxLength = EuclideanHeuristicMaxLength(_width*_width,_width);
+			
+			float lhs_g = UnsafeUtility.ReadArrayElement<float>( _F_Ptr , lhs1d ) + EuclideanHeuristicNormalized(lhs,_dest,euclideanHeuristicMaxLength)*heuristic_search;
+			float rhs_g = UnsafeUtility.ReadArrayElement<float>( _F_Ptr , rhs1d ) + EuclideanHeuristicNormalized(rhs,_dest,euclideanHeuristicMaxLength)*heuristic_search;
 
-	static void BacktrackToPath ( NativeArray<int2> solution , int solutionWidth , INT2 destination , NativeList<int2> path )
+			return lhs_g.CompareTo(rhs_g);
+		}
+	}
+
+	
+	public static float EuclideanHeuristic ( INT2 a , INT2 b ) => math.length( a-b );
+	public static float EuclideanHeuristicNormalized ( INT2 a , INT2 b , float maxLength ) => math.length( a-b ) / maxLength;
+	public static float EuclideanHeuristicMaxLength ( int arrayLength , int arrayWidth ) => EuclideanHeuristic( int2.zero , new int2{ x=arrayWidth-1 , y=arrayLength/arrayWidth-1 } );
+
+	public static void BacktrackToPath ( NativeArray<int2> solution , int solutionWidth , INT2 destination , NativeList<int2> path )
 	{
 		path.Clear();
 		if( path.Capacity<solutionWidth*2 ) path.Capacity = solutionWidth*2;//preallocate for reasonably common/bad scenario
@@ -199,6 +201,49 @@ public abstract partial class NativeGrid
 
 		#if DEBUG
 		if( step>=solutionLength && solutionLength!=0 ) throw new System.Exception($"{pos} == {solution[pos1d]}, {math.all( pos!=solution[pos1d] )}\tINFINITE LOOP AVERTED");
+		#endif
+
+		// TODO: can this step be avoided?
+		// path.Reverse();
+		{
+			int pathLength = path.Length;
+			int pathLengthHalf = pathLength / 2;
+			int lastIndex = pathLength-1;
+			for( int i=0 ; i<pathLengthHalf ; i++ )
+			{
+				var tmp = path[i];
+				path[i] = path[lastIndex-i];
+				path[lastIndex-i] = tmp;
+			}
+		}
+	}
+	public static void BacktrackToPath
+	(
+		NativeArray<int2> solution ,
+		int solutionWidth ,
+		INT2 destination ,
+		NativeArray<int2> path ,
+		int pathStartIndex ,
+		int pathIndexLength
+	)
+	{
+		int minLength = math.min( pathIndexLength , solution.Length );
+
+		int2 pos = destination;
+		int pos1d = BurstSafe.Index2dTo1d( pos , solutionWidth );
+		int step = 0;
+		while(
+			math.any( pos!=solution[pos1d] )
+			&& step++<minLength
+		)
+		{
+			path[ pathStartIndex + step ] = pos;
+			pos = solution[pos1d];
+			pos1d = BurstSafe.Index2dTo1d( pos , solutionWidth );
+		}
+
+		#if DEBUG
+		if( step>=minLength && minLength!=0 ) throw new System.Exception($"{pos} == {solution[pos1d]}, {math.all( pos!=solution[pos1d] )}\tINFINITE LOOP AVERTED");
 		#endif
 
 		// TODO: can this step be avoided?
