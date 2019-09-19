@@ -47,6 +47,11 @@ public partial class NativeGrid <STRUCT>
 		this.Length = width * height;
 	}
 
+	#region factory pattern
+	public static NativeGrid<STRUCT> Factory ( int width , int height , Allocator allocator ) => new NativeGrid<STRUCT>( width , height , allocator );
+	public static NativeGrid<STRUCT> Factory ( int width , int height , NativeArray<STRUCT> nativeArrayToNest ) => new NativeGrid<STRUCT>( width , height , nativeArrayToNest );
+	#endregion
+
 
 	#endregion
 	#region OPERATORS
