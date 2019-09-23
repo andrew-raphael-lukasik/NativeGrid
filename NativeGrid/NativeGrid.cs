@@ -15,7 +15,7 @@ public partial class NativeGrid <STRUCT>
 	#region FIELDS & PROPERTIES
 
 
-	[UnityEngine.SerializeField] protected NativeArray<STRUCT> _values;
+	protected NativeArray<STRUCT> _values;
 	/// <summary> Internal 1d data array </summary>
 	public NativeArray<STRUCT> Values => _values;
 
@@ -25,7 +25,7 @@ public partial class NativeGrid <STRUCT>
 	public bool IsCreated => _values.IsCreated;
 	public JobHandle Dependency = default(JobHandle);
 
-    [System.Obsolete("Rename to: 'Dependency'")] public JobHandle WriteAccess { get => Dependency; set => Dependency = value; }
+	[System.Obsolete("Rename to: 'Dependency'")] public JobHandle WriteAccess { get => Dependency; set => Dependency = value; }
 
 
 	#endregion
