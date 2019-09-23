@@ -90,23 +90,6 @@ public partial class NativeGrid <STRUCT>
 
 	
 	#endregion
-	#region segmented grid methods
-
-	/// <remars> Grid segment is a sub-grid nested in a single row </remars>
-	/// <returns> Outer index where given segment starts </returns>
-	public int GetSegmentStart ( int segment ) => Width * segment;
-
-	/// <remars> Grid segment is a sub-grid nested in a single row </remars>
-	/// <returns> Outer index for given segment and inner index </returns>
-	public int GetSegmentedIndex ( int segment , INT2 innerIndex )
-	{
-		int innerIndex1d = NativeGrid.Index2dTo1d( innerIndex.x , innerIndex.y , Width );
-		int outerIndexStart = GetSegmentStart( segment );
-		return outerIndexStart + innerIndex1d;
-	}
-
-
-	#endregion
 	#region ref return methods
 
 

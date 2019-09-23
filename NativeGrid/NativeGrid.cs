@@ -23,6 +23,7 @@ public partial class NativeGrid <STRUCT>
 	public readonly int Width;
 	public readonly int Height;
 	public readonly int Length;
+
 	public bool IsCreated => _array.IsCreated;
 	public JobHandle Dependency = default(JobHandle);
 
@@ -31,6 +32,7 @@ public partial class NativeGrid <STRUCT>
 
 	#endregion
 	#region CONSTRUCTORS
+
 
 	public NativeGrid ( int width , int height , Allocator allocator )
 	{
@@ -74,13 +76,6 @@ public partial class NativeGrid <STRUCT>
 		get { return _array[Index2dTo1d(i2)]; }
 		set { _array[Index2dTo1d(i2)] = value; }
 	}
-
-	public STRUCT this [ INT2 innerSegmentIndex , int segment ]
-	{
-		get { return _array[ GetSegmentedIndex(segment,innerSegmentIndex) ]; }
-		set { _array[ GetSegmentedIndex(segment,innerSegmentIndex) ] = value; }
-	}
-
 
 	#endregion
 }
