@@ -26,8 +26,8 @@ public abstract partial class NativeGrid
 	{
 		copy = new NativeGrid<T>( region.width , region.height , Allocator.TempJob );
 		var job = new CopyRegionJob<T>(
-			src: source.Values ,
-			dst: copy.Values ,
+			src: source.Array ,
+			dst: copy.Array ,
 			src_region: region ,
 			src_width: source.Width
 		);

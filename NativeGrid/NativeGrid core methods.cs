@@ -16,7 +16,7 @@ public partial class NativeGrid <STRUCT>
 	: NativeGrid, System.IDisposable
 	where STRUCT : unmanaged
 {
-	#region PUBLIC METHODS
+	#region index transformation methods
 
 
 	/// <summary> Converts index 2d to 1d equivalent </summary>
@@ -88,20 +88,45 @@ public partial class NativeGrid <STRUCT>
 		return cornerA+(cornerB-cornerA)*0.5f;
 	}
 
+	
+	#endregion
+	#region segmented grid methods
+
+	/// <remars> Grid segment is a sub-grid nested in a single row </remars>
+	/// <returns> Outer index where given segment starts </returns>
+	public int GetSegmentStart ( int segment ) => Width * segment;
+
+	/// <remars> Grid segment is a sub-grid nested in a single row </remars>
+	/// <returns> Outer index for given segment and inner index </returns>
+	public int GetSegmentedIndex ( int segment , INT2 innerIndex )
+	{
+		int innerIndex1d = NativeGrid.Index2dTo1d( innerIndex.x , innerIndex.y , Width );
+		int outerIndexStart = GetSegmentStart( segment );
+		return outerIndexStart + innerIndex1d;
+	}
+
+
+	#endregion
+	#region ref return methods
+
 
 	/// <returns> Get ref to array element </returns>
 	/// <note> Make sure index is in bound </note>
 	public unsafe ref STRUCT AsRef ( int x , int y ) => ref AsRef( BurstSafe.Index2dTo1d( x , y , this.Width ) );
 	public unsafe ref STRUCT AsRef ( INT2 i2 ) => ref AsRef( BurstSafe.Index2dTo1d( i2 , this.Width ) );
-	public unsafe ref STRUCT AsRef ( int i ) => ref ( (STRUCT*)_values.GetUnsafePtr() )[i];
+	public unsafe ref STRUCT AsRef ( int i ) => ref ( (STRUCT*)_array.GetUnsafePtr() )[i];
+
+
+	#endregion
+	#region marching squares methods
 
 
 	/// <summary> Gets the surrounding field values </summary>
 	/// <returns>
 	/// 8-bit clockwise-enumerated bit values 
-	/// 7 0 1		   [x-1,y+1]  [x,y+1]  [x+1,y+1]
-	/// 6 ^ 2	 ==	[x-1,y]	 [x,y]	 [x+1,y]
-	/// 5 4 3		   [x-1,y-1]  [x,y-1]  [x+1,y-1]
+	///		7 0 1		[x-1,y+1]   [x,y+1]   [x+1,y+1]
+	///		6 ^ 2	==	[x-1,y]      [x,y]    [x+1,y]
+	///		5 4 3		[x-1,y-1]   [x,y-1]   [x+1,y-1]
 	/// for example: 1<<0 is top, 1<<1 is top-right, 1<<2 is right, 1<<6|1<<4|1<<2 is both left,down and right
 	/// </returns>
 	public byte GetMarchingSquares ( INT2 index2d , System.Predicate<STRUCT> predicate )
@@ -136,12 +161,16 @@ public partial class NativeGrid <STRUCT>
 	}
 
 
+	#endregion
+	#region fill methods
+
+
 	/// <summary> Fill </summary>
 	public JobHandle Fill ( STRUCT value , JobHandle dependency = default(JobHandle) )
 	{
-		var job = new FillJob<STRUCT>( array:_values , value:value );
+		var job = new FillJob<STRUCT>( array:_array , value:value );
 		return Dependency = job.Schedule(
-			_values.Length , 1024 ,
+			_array.Length , 1024 ,
 			JobHandle.CombineDependencies( dependency , Dependency )
 		);
 	}
@@ -149,7 +178,7 @@ public partial class NativeGrid <STRUCT>
 	/// <summary> Fill rectangle </summary>
 	public JobHandle Fill ( RectInt region , STRUCT value , JobHandle dependency = default(JobHandle) )
 	{
-		var job = new FillRegionJob<STRUCT>( region:region , array:this._values , value:value , array_width:this.Width );
+		var job = new FillRegionJob<STRUCT>( region:region , array:this._array , value:value , array_width:this.Width );
 		return Dependency = job.Schedule(
 			region.width*region.height , 1024 ,
 			JobHandle.CombineDependencies( dependency , Dependency )
@@ -160,15 +189,23 @@ public partial class NativeGrid <STRUCT>
 	/// <summary> Fills grid border cells. </summary>
 	public JobHandle FillBorders ( STRUCT fill , JobHandle dependency = default(JobHandle) )
 	{
-		var job = new FillBordersJob<STRUCT>( array:_values , width:Width , height:Height , fill:fill );
+		var job = new FillBordersJob<STRUCT>( array:_array , width:Width , height:Height , fill:fill );
 		return Dependency = job.Schedule( JobHandle.CombineDependencies(dependency,Dependency) );
 	}
 
 
-	public JobHandle Copy ( RectInt region , out NativeGrid<STRUCT> copy ) => Copy( this , region , out copy );
-	
+	#endregion
+	#region copy methods
 
-	public void Dispose () => _values.Dispose();
+
+	public JobHandle Copy ( RectInt region , out NativeGrid<STRUCT> copy ) => Copy( this , region , out copy );
+
+
+	#endregion
+	#region deallocation methods
+
+
+	public void Dispose () => _array.Dispose();
 
 
 	#endregion
