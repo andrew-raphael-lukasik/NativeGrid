@@ -1,6 +1,6 @@
 # NativeGrid
 GOALS:
-1. Create grid data class (1d array that usefully pretends to be 2d) that works well with Unity.Jobs and ECS.
+1. Create grid data class that works well with Unity.Jobs and ECS. Grid here means 1d array that usefully pretends to be 2d to bring some ease working with data that has some kind of 2 spatial components (screen/texture space, XZ world space, etc.).
 2. No GC allocations outside DEBUG. It's no NativeContainer tho.
 
   Note: NativeGrid will remain a class. Mutable fields such as 'JobHandle Dependency' benefits from being allocated somewhere on the heap. Also this enables inheritance semantics providing some additional extensibility.
