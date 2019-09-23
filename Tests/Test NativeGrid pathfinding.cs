@@ -10,7 +10,7 @@ using Unity.Jobs;
 
 namespace Tests
 {
-	public class Test_NativeGrid_pathfinding : EditorWindow
+	public class Test_NativeGrid_Pathfinding : EditorWindow
 	{
 
 		const float _pxSize = 512;
@@ -86,8 +86,8 @@ namespace Tests
 		[MenuItem("Test/NativeGrid/Pathfinding")]
 		static void ShowWindow ()
 		{
-			var window = GetWindow<Test_NativeGrid_pathfinding>();
-			window.titleContent = new GUIContent("Test NativeGrid pathfinding");
+			var window = GetWindow<Test_NativeGrid_Pathfinding>();
+			window.titleContent = new GUIContent("NativeGrid Pathfinding Test");
 			window.minSize = window.maxSize = new Vector2{ x=_pxSize+4 , y=_pxSize+4+60 };
 		}
 
