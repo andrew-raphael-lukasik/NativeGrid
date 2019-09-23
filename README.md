@@ -1,7 +1,7 @@
 # NativeGrid
 GOALS:
 1. Create grid data class that works well with Unity.Jobs and ECS.
-<span>Grid here means 1d array that usefully pretends to be 2d to bring some ease working with data that has some kind of 2 spatial components (screen/texture space, XZ world space, etc.).</span>
+<br>Grid here means 1d array that usefully pretends to be 2d to bring some ease working with data that has some kind of 2 spatial components (screen/texture space, XZ world space, etc.).
 2. No GC allocations outside DEBUG. It's no NativeContainer tho.
 
   Note: NativeGrid will remain a class. Mutable fields such as 'JobHandle Dependency' benefits from being allocated somewhere on the heap. Also this enables inheritance semantics providing some additional extensibility.
@@ -14,7 +14,8 @@ FEATURES:
 - enumerate neighbouring cells, enumerate all cells along growing spiral-shaped path
 - Bresenham's trace line algorithm
 - A*/AStar implementation
-- You can process Texture2D without (managed) allocations by nesting it's native array inside NativeGrid<span><</span>RGB24<span>></span>. You can trace and draw lines/paths on that texture for example. (relevant raw color structs: https://github.com/andrew-raphael-lukasik/RawTextureDataProcessingExamples)
+- You can process Texture2D without (managed) allocations by nesting it's native array inside NativeGrid<span><</span>RGB24<span>></span>. You can trace and draw lines/paths on that texture for example.
+<br>(relevant raw color structs: https://github.com/andrew-raphael-lukasik/RawTextureDataProcessingExamples)
 - Marching squares method (all 8 neighbours to byte)
 
 TODO:
