@@ -165,6 +165,43 @@ public abstract partial class NativeGrid
 		}
 	}
 
+	public static void EnumerateNeighbours ( NativeArray<int2> results , int width , int height , INT2 origin2 )
+	{
+		#if DEBUG
+		UnityEngine.Assertions.Assert.AreEqual( 8 , results.Length , "Array length must be 8" );
+		#endif
+		
+		int2 origin2d = origin2;
+		int2 o2 = int2.zero;
+		int i = 0;
+		
+		//move 1 step up:
+		o2 += new int2{ y=1 };
+		results[i++] = BurstSafe.ClampIndex2d( origin2d+o2 , width , height );
+
+		//move 1 step right:
+		o2.x++;
+		results[i++] = BurstSafe.ClampIndex2d( origin2d+o2 , width , height );
+
+		//move 2 steps down:
+		o2.y--;
+		results[i++] = BurstSafe.ClampIndex2d( origin2d+o2 , width , height );
+		o2.y--;
+		results[i++] = BurstSafe.ClampIndex2d( origin2d+o2 , width , height );
+
+		//move 2 steps left:
+		o2.x--;
+		results[i++] = BurstSafe.ClampIndex2d( origin2d+o2 , width , height );
+		o2.x--;
+		results[i++] = BurstSafe.ClampIndex2d( origin2d+o2 , width , height );
+
+		//move 2 steps up:
+		o2.y++;
+		results[i++] = BurstSafe.ClampIndex2d( origin2d+o2 , width , height );
+		o2.y++;
+		results[i++] = BurstSafe.ClampIndex2d( origin2d+o2 , width , height );
+	}
+
 
 	#endregion
 }
