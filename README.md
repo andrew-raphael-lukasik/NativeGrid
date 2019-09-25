@@ -10,7 +10,7 @@ WARNING: Not all features are production-ready, this is work-in-progress code
 
 FEATURES:
 - Uses NativeArray<span><</span>T<span>></span> where T : unmanaged
-- Schedule your jobs to read/write to grid.values using grid.Dependency JobHandle (!)
+- Schedule your jobs to read/write to grid.Array using grid.Dependency JobHandle (!)
 - enumerate neighbouring cells, enumerate all cells along growing spiral-shaped path
 - Bresenham's trace line algorithm
 - A*/AStar implementation
