@@ -25,12 +25,12 @@ public abstract partial class NativeGrid
 		/// <summary> Job results goes here. List of indices to form a path. </summary>
 		public NativeList<int2> Results;
 
-		INT2 start;
-		INT2 destination;
-		[ReadOnly] NativeArray<float> moveCost;
-		int moveCost_width;
-		float heuristic_cost;
-		float heuristic_search;
+		readonly int2 start;
+		readonly int2 destination;
+		[ReadOnly] readonly NativeArray<float> moveCost;
+		readonly int moveCost_width;
+		readonly float heuristic_cost;
+		readonly float heuristic_search;
 
 		public NativeArray<float> _F_;
 		public NativeArray<int2> solution;
@@ -150,10 +150,10 @@ public abstract partial class NativeGrid
 
 	public unsafe struct AStarJobComparer : IComparerInt2
 	{
-		void* _F_Ptr;
-		int _width;
-		int2 _dest;
-		float heuristic_search;
+		readonly void* _F_Ptr;
+		readonly int _width;
+		readonly int2 _dest;
+		readonly float heuristic_search;
 		public AStarJobComparer ( NativeArray<float> _G_ , int weightsWidth , INT2 destination , float heuristic_search )
 		{
 			this._F_Ptr = NativeArrayUnsafeUtility.GetUnsafeReadOnlyPtr( _G_ );
