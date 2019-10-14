@@ -19,6 +19,7 @@ public struct FLOAT4
 	public static implicit operator FLOAT4 ( float4 f4 ) => new FLOAT4{ Value=f4 };
 	public static implicit operator FLOAT4 ( Vector4 v4 ) => new FLOAT4{ Value=v4 };
 	public static implicit operator Vector4 ( FLOAT4 F4 ) => F4.Value;
+	public static implicit operator FLOAT4 ( System.ValueTuple<float,float,float,float> tuple ) => new FLOAT4{ Value=new float4{ x=tuple.Item1 , y=tuple.Item2 , z=tuple.Item3 , w=tuple.Item4 } };
 
 	public static float4 operator + ( FLOAT4 a , FLOAT4 b ) => a.Value + b.Value;
 	public static float4 operator - ( FLOAT4 a , FLOAT4 b ) => a.Value - b.Value;
@@ -43,6 +44,7 @@ public struct FLOAT3
 	public static implicit operator FLOAT3 ( float3 f3 ) => new FLOAT3{ Value=f3 };
 	public static implicit operator FLOAT3 ( Vector3 v3 ) => new FLOAT3{ Value=v3 };
 	public static implicit operator Vector3 ( FLOAT3 F3 ) => F3.Value;
+	public static implicit operator FLOAT3 ( System.ValueTuple<float,float,float> tuple ) => new FLOAT3{ Value=new float3{ x=tuple.Item1 , y=tuple.Item2 , z=tuple.Item3 } };
 
 	public static float3 operator + ( FLOAT3 a , FLOAT3 b ) => a.Value + b.Value;
 	public static float3 operator - ( FLOAT3 a , FLOAT3 b ) => a.Value - b.Value;
@@ -64,6 +66,7 @@ public struct FLOAT2
 	public static implicit operator FLOAT2 ( float2 f2 ) => new FLOAT2{ Value=f2 };
 	public static implicit operator FLOAT2 ( Vector2 v2 ) => new FLOAT2{ Value=v2 };
 	public static implicit operator Vector2 ( FLOAT2 F2 ) => F2.Value;
+	public static implicit operator FLOAT2 ( System.ValueTuple<float,float> tuple ) => new FLOAT2{ Value=new float2{ x=tuple.Item1 , y=tuple.Item2 } };
 	
 	public static float2 operator + ( FLOAT2 a , FLOAT2 b ) => a.Value + b.Value;
 	public static float2 operator - ( FLOAT2 a , FLOAT2 b ) => a.Value - b.Value;
