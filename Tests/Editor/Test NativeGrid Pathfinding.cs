@@ -42,8 +42,8 @@ namespace Tests
 			} );
 			ROOT.Add( RESOLUTION );
 
-			// HEURISTIC COST:
-			var HEURISTIC_COST = new FloatField( $"Heuristic Cost:" );
+			// COST HEURISTIC:
+			var HEURISTIC_COST = new FloatField( $"Cost Heuristic:" );
 			HEURISTIC_COST.style.paddingLeft = HEURISTIC_COST.style.paddingRight = 10;
 			HEURISTIC_COST.value = heuristic_cost;
 			HEURISTIC_COST.RegisterValueChangedCallback( (e)=> {
@@ -53,8 +53,8 @@ namespace Tests
 			} );
 			ROOT.Add( HEURISTIC_COST );
 
-			// HEURISTIC COST:
-			var HEURISTIC_SEARCH = new FloatField( $"Heuristic Search:" );
+			// SEARCH HEURISTIC:
+			var HEURISTIC_SEARCH = new FloatField( $"Search Heuristic:" );
 			HEURISTIC_SEARCH.style.paddingLeft = HEURISTIC_SEARCH.style.paddingRight = 10;
 			HEURISTIC_SEARCH.value = heuristic_search;
 			HEURISTIC_SEARCH.RegisterValueChangedCallback( (e)=> {
