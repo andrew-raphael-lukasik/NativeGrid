@@ -39,6 +39,7 @@ namespace Tests
 				GRID.Clear();
 				CreateGridLayout( GRID );
 				NewRandomMap();
+				Repaint();
 			} );
 			ROOT.Add( RESOLUTION );
 
@@ -50,6 +51,7 @@ namespace Tests
 				heuristic_cost = e.newValue;
 				NewRandomMap();
 				SolvePath();
+				Repaint();
 			} );
 			ROOT.Add( HEURISTIC_COST );
 
@@ -61,6 +63,7 @@ namespace Tests
 				heuristic_search = e.newValue;
 				NewRandomMap();
 				SolvePath();
+				Repaint();
 			} );
 			ROOT.Add( HEURISTIC_SEARCH );
 
@@ -74,6 +77,7 @@ namespace Tests
 				_offset = (float)EditorApplication.timeSinceStartup;
 				NewRandomMap();
 				SolvePath();
+				Repaint();
 			} );
 			ROOT.Add( GRID );
 			CreateGridLayout( GRID );
