@@ -16,16 +16,14 @@ public abstract partial class NativeGrid
 	#region ASSERTIONS
 
 
-	#if DEBUG
-
-	[Unity.Burst.BurstDiscard]
+	[System.Diagnostics.Conditional("UNITY_ASSERTIONS")]
 	static void Assert_IndexTranslate ( RectInt r , int rx , int ry , int R_width )
 	{
 		Assert.IsTrue( R_width>0 , $"FAILED: R_width ({R_width}) > 0" );
 		Assert.IsTrue( r.width<=R_width , $"FAILED: r.width ({r.width}) > ({R_width})  R_width" );
 		Assert_IndexTranslate( r , rx , ry );
 	}
-	[Unity.Burst.BurstDiscard]
+	[System.Diagnostics.Conditional("UNITY_ASSERTIONS")]
 	static void Assert_IndexTranslate ( RectInt r , int rx , int ry )
 	{
 		Assert.IsTrue( rx>=0 , $"FAILED: rx ({rx}) >= 0" );
@@ -40,14 +38,14 @@ public abstract partial class NativeGrid
 		Assert.IsTrue( ry>=0 && ry<r.height , $"FAILED: ry ({ry}) is out of bounds for r ({r})" );
 	}
 
-	[Unity.Burst.BurstDiscard]
+	[System.Diagnostics.Conditional("UNITY_ASSERTIONS")]
 	static void Assert_Index1dTo2d ( int i , int width )
 	{
 		Assert.IsTrue( width>0 , $"FAILED: width ({width}) > 0" );
 		Assert.IsTrue( i>=0 , $"FAILED: i ({i}) >= 0" );
 	}
 
-	[Unity.Burst.BurstDiscard]
+	[System.Diagnostics.Conditional("UNITY_ASSERTIONS")]
 	static void Assert_Index2dTo1d ( int x , int y , int width )
 	{
 		Assert.IsTrue( width>0 , $"FAILED: width ({width}) > 0" );
@@ -56,8 +54,6 @@ public abstract partial class NativeGrid
 		Assert.IsTrue( x<width , $"FAILED: x ({x}) < ({width}) width" );
 	}
 	static void Assert_Index2dTo1d ( INT2 Index2d , int width ) => Assert_Index2dTo1d( Index2d.x , Index2d.y , width );
-
-	#endif
 
 
 	#endregion
