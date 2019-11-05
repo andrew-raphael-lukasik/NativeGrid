@@ -18,9 +18,7 @@ public abstract partial class NativeGrid
 	/// <summary> Converts 1d to 2d array index </summary>
 	public static int2 Index1dTo2d ( int i , int width )
 	{
-		#if DEBUG
 		Assert_Index1dTo2d( i , width );
-		#endif
 
 		return BurstSafe.Index1dTo2d( i , width );
 	}
@@ -29,9 +27,7 @@ public abstract partial class NativeGrid
 	/// <summary> Converts index 2d to 1d equivalent </summary>
 	public static int Index2dTo1d ( int x , int y , int width )
 	{
-		#if DEBUG
 		Assert_Index2dTo1d( x , y , width );
-		#endif
 
 		return BurstSafe.Index2dTo1d( x , y , width );
 	}
@@ -46,9 +42,7 @@ public abstract partial class NativeGrid
 	/// <param name="R_width">Outer RectInt.width</param>
 	public static int IndexTranslate ( RectInt r , int rx , int ry , int R_width )
 	{
-		#if DEBUG
 		Assert_IndexTranslate( r , rx , ry , R_width );
-		#endif
 
 		return Index2dTo1d( r.x+rx , r.y+ry , R_width );
 	}
@@ -61,9 +55,7 @@ public abstract partial class NativeGrid
 	/// <param name="R_width">Outer RectInt.width</param>
 	public static int2 IndexTranslate ( RectInt r , int2 rxy )
 	{
-		#if DEBUG
 		Assert_IndexTranslate( r , rxy.x , rxy.y );
-		#endif
 
 		return BurstSafe.IndexTranslate( r , rxy );
 	}
