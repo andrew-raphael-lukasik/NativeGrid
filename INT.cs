@@ -74,3 +74,19 @@ public struct INT2
 
 	override public string ToString () => this.Value.ToString();
 }
+
+public struct INT
+{
+	int Value;
+
+	public static implicit operator int ( INT I ) => I.Value;
+	public static implicit operator INT ( int i ) => new INT{ Value=i };
+	
+	public static int operator + ( INT a , INT b ) => a.Value + b.Value;
+	public static int operator - ( INT a , INT b ) => a.Value - b.Value;
+	public static int operator * ( INT a , INT b ) => a.Value * b.Value;
+	public static int operator / ( INT a , INT b ) => a.Value / b.Value;
+	public static int operator * ( INT val , int f ) => val.Value * f;
+
+	override public string ToString () => this.Value.ToString();
+}

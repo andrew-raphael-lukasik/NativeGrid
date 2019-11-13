@@ -76,3 +76,19 @@ public struct FLOAT2
 
 	override public string ToString () => this.Value.ToString();
 }
+
+public struct FLOAT
+{
+	float Value;
+	
+	public static implicit operator float ( FLOAT F ) => F.Value;
+	public static implicit operator FLOAT ( float f ) => new FLOAT{ Value=f };
+	
+	public static float operator + ( FLOAT a , FLOAT b ) => a.Value + b.Value;
+	public static float operator - ( FLOAT a , FLOAT b ) => a.Value - b.Value;
+	public static float operator * ( FLOAT a , FLOAT b ) => a.Value * b.Value;
+	public static float operator / ( FLOAT a , FLOAT b ) => a.Value / b.Value;
+	public static float operator * ( FLOAT F2 , float f ) => F2.Value * f;
+
+	override public string ToString () => this.Value.ToString();
+}
