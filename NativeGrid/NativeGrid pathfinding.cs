@@ -1,5 +1,9 @@
 /// homepage: https://github.com/andrew-raphael-lukasik/NativeGrid
 
+#if UNITY_ASSERTIONS
+using UnityEngine.Assertions;
+#endif
+
 using Unity.Mathematics;
 using Unity.Collections;
 using Unity.Jobs;
@@ -178,9 +182,18 @@ public abstract partial class NativeGrid
 	
 	public static float EuclideanHeuristic ( INT2 a , INT2 b ) => math.length( a-b );
 	public static float EuclideanHeuristicNormalized ( INT2 a , INT2 b , float maxLength ) => math.length( a-b ) / maxLength;
-	public static float EuclideanHeuristicMaxLength ( int arrayLength , int arrayWidth ) => EuclideanHeuristic( int2.zero , new int2{ x=arrayWidth-1 , y=arrayLength/arrayWidth-1 } );
+	public static float EuclideanHeuristicMaxLength ( INT arrayLength , INT arrayWidth ) => EuclideanHeuristic( int2.zero , new int2{ x=arrayWidth-1 , y=arrayLength/arrayWidth-1 } );
 
-	public static void BacktrackToPath ( NativeArray<int2> solution , int solutionWidth , INT2 destination , NativeList<int2> path )
+
+	/// <summary> Finds sequence of indices (a path) for given AStar solution </summary>
+	/// <returns> Was destination reached </returns>
+	public static bool BacktrackToPath
+	(
+		NativeArray<int2> solution ,
+		INT solutionWidth ,
+		INT2 destination ,
+		NativeList<int2> path
+	)
 	{
 		path.Clear();
 		if( path.Capacity<solutionWidth*2 ) path.Capacity = solutionWidth*2;//preallocate for reasonably common/bad scenario
@@ -191,73 +204,128 @@ public abstract partial class NativeGrid
 		int step = 0;
 		while(
 			math.any( pos!=solution[pos1d] )
-			&& step++<solutionLength
+			&& step<solutionLength
 		)
 		{
 			path.Add( pos );
 			pos = solution[pos1d];
 			pos1d = BurstSafe.Index2dTo1d( pos , solutionWidth );
+			step++;
 		}
-
-		#if DEBUG
-		if( step>=solutionLength && solutionLength!=0 ) throw new System.Exception($"{pos} == {solution[pos1d]}, {math.all( pos!=solution[pos1d] )}\tINFINITE LOOP AVERTED");
-		#endif
+		bool wasDestinationReached = math.all( pos==solution[pos1d] );
 
 		// TODO: can this step be avoided?
-		// path.Reverse();
-		{
-			int pathLength = path.Length;
-			int pathLengthHalf = pathLength / 2;
-			int lastIndex = pathLength-1;
-			for( int i=0 ; i<pathLengthHalf ; i++ )
-			{
-				var tmp = path[i];
-				path[i] = path[lastIndex-i];
-				path[lastIndex-i] = tmp;
-			}
-		}
+		ReverseArray<int2>( path );
+
+		return wasDestinationReached;
 	}
-	public static void BacktrackToPath
+	/// <summary> Finds sequence of indices (a path) for given AStar solution </summary>
+	/// <remarks> Uses segmented array for output </remarks>
+	/// <returns> Was destination reached </returns>
+	public static bool BacktrackToPath
 	(
-		NativeArray<int2> solution ,
-		int solutionWidth ,
+		NativeArray<int2> solvedGrid ,
+		INT solvedGridWidth ,
 		INT2 destination ,
-		NativeArray<int2> path ,
-		int pathStartIndex ,
-		int pathIndexLength
+		NativeArray<int2> segmentedIndices , // array segmented to store multiple paths
+		INT segmentStart , // position for first path index2d
+		INT segmentEnd , // position for last path index2d
+		out int pathLength
 	)
 	{
-		int minLength = math.min( pathIndexLength , solution.Length );
+		#if UNITY_ASSERTIONS
+		Assert.IsTrue( destination.x>=0 && destination.y>=0 , $"destination: {destination} >= 0" );
+		Assert.IsTrue( destination.x<solvedGridWidth && destination.y<solvedGridWidth , $"destination: {destination} < {solvedGridWidth} solutionWidth" );
+		#endif
 
 		int2 pos = destination;
-		int pos1d = BurstSafe.Index2dTo1d( pos , solutionWidth );
+		int pos1d = BurstSafe.Index2dTo1d( pos , solvedGridWidth );
+		int availableSpace = segmentEnd - segmentStart;
 		int step = 0;
+
+		#if UNITY_ASSERTIONS
+		localAssertions();
+		#endif
+		
 		while(
-			math.any( pos!=solution[pos1d] )
-			&& step++<minLength
+			math.any( pos!=solvedGrid[pos1d] )
+			&& step<availableSpace
 		)
 		{
-			path[ pathStartIndex + step ] = pos;
-			pos = solution[pos1d];
-			pos1d = BurstSafe.Index2dTo1d( pos , solutionWidth );
-		}
+			int segmentedArrayIndex = segmentStart + step;
+			
+			#if UNITY_ASSERTIONS
+			if( segmentedArrayIndex<segmentStart || segmentedArrayIndex>segmentEnd ) throw new System.Exception($"{nameof(segmentedArrayIndex)} {segmentedArrayIndex} is outside it's range of {{{segmentStart}...{segmentEnd}}}");
+			#endif
 
-		#if DEBUG
-		if( step>=minLength && minLength!=0 ) throw new System.Exception($"{pos} == {solution[pos1d]}, {math.all( pos!=solution[pos1d] )}\tINFINITE LOOP AVERTED");
+			segmentedIndices[segmentedArrayIndex] = pos;
+			pos = solvedGrid[pos1d];
+			pos1d = BurstSafe.Index2dTo1d( pos , solvedGridWidth );
+
+			#if UNITY_ASSERTIONS
+			localAssertions();
+			#endif
+
+			step++;
+		}
+		pathLength = step;
+		bool wasDestinationReached = math.all( pos==solvedGrid[pos1d] );
+
+		#if UNITY_ASSERTIONS
+		for( int n=0 ; n<pathLength ; n++ )
+		{
+			int index = segmentStart + n;
+			if( math.all(segmentedIndices[index]==int2.zero) ) throw new System.Exception($"{nameof(segmentedIndices)}[{index}] is {segmentedIndices[index]}, {nameof(segmentStart)}: {segmentStart}, {nameof(segmentEnd)}: {segmentEnd}, {nameof(pathLength)}: {pathLength}, {nameof(step)}: {step}");
+		}
 		#endif
 
 		// TODO: can this step be avoided?
-		// path.Reverse();
+		// reverse path order:
 		{
-			int pathLength = path.Length;
-			int pathLengthHalf = pathLength / 2;
-			int lastIndex = pathLength-1;
-			for( int i=0 ; i<pathLengthHalf ; i++ )
-			{
-				var tmp = path[i];
-				path[i] = path[lastIndex-i];
-				path[lastIndex-i] = tmp;
-			}
+			int first = segmentStart;
+			int last = segmentStart + math.max( pathLength-1 , 0 );
+			
+			#if UNITY_ASSERTIONS
+			if( last>segmentEnd ) throw new System.Exception($"{nameof(last)} {last} > {segmentEnd} {nameof(segmentEnd)}");
+			#endif
+
+			ReverseArraySegment( segmentedIndices , first , last );
+		}
+
+		#if UNITY_ASSERTIONS
+		void localAssertions ()
+		{
+			string debugInfo = $"pos: {pos}, pos1d:{pos1d}, solution.Length:{solvedGrid.Length}, solutionWidth:{solvedGridWidth} squared: {solvedGridWidth}";
+			Assert.IsTrue( pos1d>=0 , debugInfo );
+			Assert.IsTrue( pos1d<solvedGrid.Length , debugInfo );
+		}
+		#endif
+
+		return wasDestinationReached;
+	}
+
+	public static void ReverseArray <T> ( NativeArray<T> array ) where T : unmanaged
+	{
+		int length = array.Length;
+		int lengthHalf = length / 2;
+		int last = length-1;
+		for( int i=0 ; i<lengthHalf ; i++ )
+		{
+			var tmp = array[i];
+			array[i] = array[last-i];
+			array[last-i] = tmp;
+		}
+	}
+
+	public static void ReverseArraySegment <T> ( NativeArray<T> array , INT first , INT last ) where T : unmanaged
+	{
+		int length = last - first;
+		int lengthHalf = length / 2;
+		for( int step=0 ; step<lengthHalf ; step++ )
+		{
+			var tmp = array[first+step];
+			array[first+step] = array[last-step];
+			array[last-step] = tmp;
 		}
 	}
 
