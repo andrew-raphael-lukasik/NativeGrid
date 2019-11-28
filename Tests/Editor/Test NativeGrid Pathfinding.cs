@@ -199,7 +199,7 @@ namespace Tests
 			//visualize:
 			foreach( var i2 in path )
 			{
-				int i = NativeGrid.BurstSafe.Index2dTo1d( i2 , _resolution );
+				int i = NativeGrid.Index2dTo1d( i2 , _resolution );
 				var CELL = _grid[i];
 				
 				var cellStyle = CELL.style;
@@ -226,7 +226,7 @@ namespace Tests
 			}
 			foreach( var i2 in visited )
 			{
-				int i = NativeGrid.BurstSafe.Index2dTo1d( i2 , _resolution );
+				int i = NativeGrid.Index2dTo1d( i2 , _resolution );
 				var CELL = _grid[i];
 				
 				var cellStyle = CELL.style;

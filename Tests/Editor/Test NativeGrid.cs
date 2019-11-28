@@ -36,7 +36,7 @@ static class NATIVE_GRID
 			[Test] public static void MidpointRoundingAwayFromZero ()
 			{
 				for( float range=2.1f, value=-range ; value<range ; value+=0.001f )
-					Assert.AreEqual( System.Math.Round( value , System.MidpointRounding.AwayFromZero ) , NativeGrid.BurstSafe.MidpointRoundingAwayFromZero(value) );
+					Assert.AreEqual( System.Math.Round( value , System.MidpointRounding.AwayFromZero ) , NativeGrid.MidpointRoundingAwayFromZero(value) );
 			}
 
 			[Test] public static void PointToIndex2d_ReproCase1 () => PointToIndex2d_Test( new float2(-1498.664f,-176.8691f) , new float2(-1499f,-177f) );
@@ -51,8 +51,8 @@ static class NATIVE_GRID
 				float2 worldSize = new float2( 3000f , 3000f );
 				float2 gridOrigin = new float2( -1500f , -1500f );
 				const int width = 1500, height = 1500;
-				INT2 A = NativeGrid.BurstSafe.PointToIndex2d( a-gridOrigin, worldSize , width , height );
-				INT2 B = NativeGrid.BurstSafe.PointToIndex2d( b-gridOrigin , worldSize , width , height );
+				INT2 A = NativeGrid.PointToIndex2d( a-gridOrigin, worldSize , width , height );
+				INT2 B = NativeGrid.PointToIndex2d( b-gridOrigin , worldSize , width , height );
 				// Debug.Log( $"a:{GetPositionInsideCell_GetDebugString(a,width,height,worldSize)}\nb:{GetPositionInsideCell_GetDebugString(b,width,height,worldSize)}" );
 				Assert.AreEqual( A , B );
 			}
@@ -76,8 +76,8 @@ static class NATIVE_GRID
 			public static void PointToIndex2d_Test_2x2 ( float2 a , float2 b , bool equalityTest = true )
 			{
 				float2 worldSize = new float2( 2f , 2f ); const int width = 2, height = 2;
-				INT2 A = NativeGrid.BurstSafe.PointToIndex2d( a , worldSize , width , height );
-				INT2 B = NativeGrid.BurstSafe.PointToIndex2d( b , worldSize , width , height );
+				INT2 A = NativeGrid.PointToIndex2d( a , worldSize , width , height );
+				INT2 B = NativeGrid.PointToIndex2d( b , worldSize , width , height );
 				// Debug.Log( $"a:{GetPositionInsideCell_GetDebugString(a,width,height,worldSize)}\nb:{GetPositionInsideCell_GetDebugString(b,width,height,worldSize)}" );
 				if( equalityTest ) Assert.AreEqual( A , B );
 				else Assert.AreNotEqual( A , B );
@@ -96,25 +96,25 @@ static class NATIVE_GRID
 			public static void PointToIndex2d_Test_1x1 ( float2 a , float2 b )
 			{
 				float2 worldSize = new float2{ x=2f , y=1f }; const int width = 1, height = 1;
-				INT2 A = NativeGrid.BurstSafe.PointToIndex2d( a , worldSize , width , height );
-				INT2 B = NativeGrid.BurstSafe.PointToIndex2d( b , worldSize , width , height );
+				INT2 A = NativeGrid.PointToIndex2d( a , worldSize , width , height );
+				INT2 B = NativeGrid.PointToIndex2d( b , worldSize , width , height );
 				// Debug.Log( $"a:{GetPositionInsideCell_GetDebugString(a,width,height,worldSize)}\nb:{GetPositionInsideCell_GetDebugString(b,width,height,worldSize)}" );
 				Assert.AreEqual( A , B );
 			}
 
 			static string GetPositionInsideCell_GetDebugString ( float2 p , int width , int height , float2 worldSize )
 			{
-				NativeGrid.BurstSafe.GetPositionInsideCell( p.x , width , worldSize.x , out int xlo , out int xhi , out float xf );
-				NativeGrid.BurstSafe.GetPositionInsideCell( p.y , height , worldSize.y , out int ylo , out int yhi , out float yf );
+				NativeGrid.GetPositionInsideCell( p.x , width , worldSize.x , out int xlo , out int xhi , out float xf );
+				NativeGrid.GetPositionInsideCell( p.y , height , worldSize.y , out int ylo , out int yhi , out float yf );
 				return $"\n	x: {xlo}... {xf:R} ...{xhi}\n	y: {ylo}... {yf:R} ...{yhi}";
 			}
 
 
-			[Test] public static void IsPointBetweenCells___3000f_1500___1f_IS_0 () => Assert.AreEqual( 0 , NativeGrid.BurstSafe.IsPointBetweenCells(1f,1500,3000f) );
+			[Test] public static void IsPointBetweenCells___3000f_1500___1f_IS_0 () => Assert.AreEqual( 0 , NativeGrid.IsPointBetweenCells(1f,1500,3000f) );
 			// [Test] public static void IsPointBetweenCells___3000f_1500___2f_IS_1 () => Assert.AreEqual( 1 , NativeGrid.IsPointBetweenCells(2f,1500,3000f) );
 
-			[Test] public static void IsPointBetweenCells___2f_2___1fMinusEpsilon_IS_0 () => Assert.AreEqual( 0 , NativeGrid.BurstSafe.IsPointBetweenCells(1f-float.Epsilon,2,2f) );
-			[Test] public static void IsPointBetweenCells___2f_2___1fPlusEpsilon_IS_0 () => Assert.AreEqual( 0 , NativeGrid.BurstSafe.IsPointBetweenCells(1f+float.Epsilon,2,2f) );
+			[Test] public static void IsPointBetweenCells___2f_2___1fMinusEpsilon_IS_0 () => Assert.AreEqual( 0 , NativeGrid.IsPointBetweenCells(1f-float.Epsilon,2,2f) );
+			[Test] public static void IsPointBetweenCells___2f_2___1fPlusEpsilon_IS_0 () => Assert.AreEqual( 0 , NativeGrid.IsPointBetweenCells(1f+float.Epsilon,2,2f) );
 			// [Test] public static void IsPointBetweenCells___2f_2___1f_IS_1 () => Assert.AreEqual( 1 , NativeGrid.IsPointBetweenCells(1f,2,2f) );
 
 		}
@@ -152,8 +152,8 @@ static class NATIVE_GRID
 			{
 				int Ai = NativeGrid.PointToIndex( position , gridWorldSize , gridWidth , gridHeight );
 				int2 Ai2 = NativeGrid.Index1dTo2d( Ai , gridWidth );
-				int2 Bi2 = NativeGrid.BurstSafe.PointToIndex2d( position , gridWorldSize , gridWidth , gridHeight );
-				Assert.AreEqual( Ai2 , Bi2 , $"\tNativeGrid.Index1dTo2d(NativeGrid.PointToIndex(params)) returned: {Ai2}\n\tNativeGrid.BurstSafe.PointToIndex2d returned: {Bi2}" );
+				int2 Bi2 = NativeGrid.PointToIndex2d( position , gridWorldSize , gridWidth , gridHeight );
+				Assert.AreEqual( Ai2 , Bi2 , $"\tNativeGrid.Index1dTo2d(NativeGrid.PointToIndex(params)) returned: {Ai2}\n\tNativeGrid.PointToIndex2d returned: {Bi2}" );
 			}
 		}
 
