@@ -133,34 +133,34 @@ public abstract partial class NativeGrid
 		{
 			//move 1 step up:
 			o2 += new int2{ y=1 };
-			results.Add( BurstSafe.ClampIndex2d( origin2d+o2 , width , height ) );
+			results.Add( ClampIndex2d( origin2d+o2 , width , height ) );
 
 			//move right:
 			for( int imr=0 ; imr<(ir*2)-1 ; imr++ )
 			{
 				o2.x++;
-				results.Add( BurstSafe.ClampIndex2d( origin2d+o2 , width , height ) );
+				results.Add( ClampIndex2d( origin2d+o2 , width , height ) );
 			}
 
 			//move down:
 			for( int imd=0 ; imd<ir*2 ; imd++ )
 			{
 				o2.y--;
-				results.Add( BurstSafe.ClampIndex2d( origin2d+o2 , width , height ) );
+				results.Add( ClampIndex2d( origin2d+o2 , width , height ) );
 			}
 
 			//move left:
 			for( int iml=0 ; iml<ir*2 ; iml++ )
 			{
 				o2.x--;
-				results.Add( BurstSafe.ClampIndex2d( origin2d+o2 , width , height ) );
+				results.Add( ClampIndex2d( origin2d+o2 , width , height ) );
 			}
 
 			//move up:
 			for( int imu=0 ; imu<ir*2 ; imu++ )
 			{
 				o2.y++;
-				results.Add( BurstSafe.ClampIndex2d( origin2d+o2 , width , height ) );
+				results.Add( ClampIndex2d( origin2d+o2 , width , height ) );
 			}
 		}
 	}
@@ -177,29 +177,29 @@ public abstract partial class NativeGrid
 		
 		//move 1 step up:
 		o2 += new int2{ y=1 };
-		results[i++] = BurstSafe.ClampIndex2d( origin2d+o2 , width , height );
+		results[i++] = ClampIndex2d( origin2d+o2 , width , height );
 
 		//move 1 step right:
 		o2.x++;
-		results[i++] = BurstSafe.ClampIndex2d( origin2d+o2 , width , height );
+		results[i++] = ClampIndex2d( origin2d+o2 , width , height );
 
 		//move 2 steps down:
 		o2.y--;
-		results[i++] = BurstSafe.ClampIndex2d( origin2d+o2 , width , height );
+		results[i++] = ClampIndex2d( origin2d+o2 , width , height );
 		o2.y--;
-		results[i++] = BurstSafe.ClampIndex2d( origin2d+o2 , width , height );
+		results[i++] = ClampIndex2d( origin2d+o2 , width , height );
 
 		//move 2 steps left:
 		o2.x--;
-		results[i++] = BurstSafe.ClampIndex2d( origin2d+o2 , width , height );
+		results[i++] = ClampIndex2d( origin2d+o2 , width , height );
 		o2.x--;
-		results[i++] = BurstSafe.ClampIndex2d( origin2d+o2 , width , height );
+		results[i++] = ClampIndex2d( origin2d+o2 , width , height );
 
 		//move 2 steps up:
 		o2.y++;
-		results[i++] = BurstSafe.ClampIndex2d( origin2d+o2 , width , height );
+		results[i++] = ClampIndex2d( origin2d+o2 , width , height );
 		o2.y++;
-		results[i++] = BurstSafe.ClampIndex2d( origin2d+o2 , width , height );
+		results[i++] = ClampIndex2d( origin2d+o2 , width , height );
 	}
 
 

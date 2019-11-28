@@ -70,7 +70,7 @@ public abstract partial class NativeGrid
 			this.heuristic_search = heuristic_search;
 
 			int length = moveCost.Length;
-			int start1d = BurstSafe.Index2dTo1d( start , moveCost_width );
+			int start1d = Index2dTo1d( start , moveCost_width );
 			_F_ = new NativeArray<float>( length , Allocator.TempJob , NativeArrayOptions.UninitializedMemory );
 			solution = new NativeArray<int2>( length , Allocator.TempJob );
 			frontier = new NativeMinHeap<int2,AStarJobComparer>(
@@ -83,7 +83,7 @@ public abstract partial class NativeGrid
 		public void Execute ()
 		{
 			int length = moveCost.Length;
-			int start1d = BurstSafe.Index2dTo1d( start , moveCost_width );
+			int start1d = Index2dTo1d( start , moveCost_width );
 			{
 				for( int i=_F_.Length-1 ; i!=-1 ; i-- ) _F_[i] = float.MaxValue;
 				_F_[start1d] = 0;
@@ -104,7 +104,7 @@ public abstract partial class NativeGrid
 			while( frontier.Count!=0 && math.any(node!=destination) )
 			{
 				node = frontier.Pop();//we grab candidate with lowest F so far
-				int node1d = BurstSafe.Index2dTo1d( node , moveCost_width );
+				int node1d = Index2dTo1d( node , moveCost_width );
 				float node_f = _F_[node1d];
 
 				//lets check all its neighbours:
@@ -113,7 +113,7 @@ public abstract partial class NativeGrid
 				for( int i=0 ; i<neighboursLength ; i++ )
 				{
 					int2 neighbour = neighbours[i];
-					int neighbour1d = BurstSafe.Index2dTo1d( neighbour , moveCost_width );
+					int neighbour1d = Index2dTo1d( neighbour , moveCost_width );
 					
 					bool isOrthogonal = math.any( node==neighbour );//is relative position orthogonal or diagonal
 
@@ -167,8 +167,8 @@ public abstract partial class NativeGrid
 		}
 		int IComparerInt2.Compare ( int2 lhs , int2 rhs )
 		{
-			int lhs1d = BurstSafe.Index2dTo1d( lhs , _width );
-			int rhs1d = BurstSafe.Index2dTo1d( rhs , _width );
+			int lhs1d = Index2dTo1d( lhs , _width );
+			int rhs1d = Index2dTo1d( rhs , _width );
 			
 			float euclideanHeuristicMaxLength = EuclideanHeuristicMaxLength(_width*_width,_width);
 			
@@ -200,7 +200,7 @@ public abstract partial class NativeGrid
 		int solutionLength = solution.Length;
 
 		int2 pos = destination;
-		int pos1d = BurstSafe.Index2dTo1d( pos , solutionWidth );
+		int pos1d = Index2dTo1d( pos , solutionWidth );
 		int step = 0;
 		while(
 			math.any( pos!=solution[pos1d] )
@@ -209,7 +209,7 @@ public abstract partial class NativeGrid
 		{
 			path.Add( pos );
 			pos = solution[pos1d];
-			pos1d = BurstSafe.Index2dTo1d( pos , solutionWidth );
+			pos1d = Index2dTo1d( pos , solutionWidth );
 			step++;
 		}
 		bool wasDestinationReached = math.all( pos==solution[pos1d] );
@@ -239,7 +239,7 @@ public abstract partial class NativeGrid
 		#endif
 
 		int2 pos = destination;
-		int pos1d = BurstSafe.Index2dTo1d( pos , solvedGridWidth );
+		int pos1d = Index2dTo1d( pos , solvedGridWidth );
 		int availableSpace = segmentEnd - segmentStart;
 		int step = 0;
 
@@ -260,7 +260,7 @@ public abstract partial class NativeGrid
 
 			segmentedIndices[segmentedArrayIndex] = pos;
 			pos = solvedGrid[pos1d];
-			pos1d = BurstSafe.Index2dTo1d( pos , solvedGridWidth );
+			pos1d = Index2dTo1d( pos , solvedGridWidth );
 
 			#if UNITY_ASSERTIONS
 			localAssertions();

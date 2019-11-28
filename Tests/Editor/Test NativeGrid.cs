@@ -121,34 +121,34 @@ static class NATIVE_GRID
 
 		static class EQUIVALENT_METHODS_COMPARED
 		{
-			[Test] public static void Index1dTo2d_VS_BurstSafePointToIndex2d_CASE01 ()
+			[Test] public static void Index1dTo2d_VS_PointToIndex2d_CASE01 ()
 			{
-				Index1dTo2d_VS_BurstSafePointToIndex2d(
+				Index1dTo2d_VS_PointToIndex2d(
 					position:			new float2{ x = 0.333f , y = 0.666f } ,
 					gridWorldSize:		new float2{ x = 1f , y = 1f } ,
 					gridWidth:			100 ,
 					gridHeight:			100
 				);
 			}
-			[Test] public static void Index1dTo2d_VS_BurstSafePointToIndex2d_CASE02 ()
+			[Test] public static void Index1dTo2d_VS_PointToIndex2d_CASE02 ()
 			{
-				Index1dTo2d_VS_BurstSafePointToIndex2d(
+				Index1dTo2d_VS_PointToIndex2d(
 					position:			new float2{ x = 1557.4f , y = 1521.5f } ,
 					gridWorldSize:		new float2{ x = 3000f , y = 3000f } ,
 					gridWidth:			1500 ,
 					gridHeight:			1500
 				);
 			}
-			[Test] public static void Index1dTo2d_VS_BurstSafePointToIndex2d_CASE03 ()
+			[Test] public static void Index1dTo2d_VS_PointToIndex2d_CASE03 ()
 			{
-				Index1dTo2d_VS_BurstSafePointToIndex2d(
+				Index1dTo2d_VS_PointToIndex2d(
 					position:			new float2{ x = -1499f , y = -177f } ,
 					gridWorldSize:		new float2{ x = 3000f , y = 3000f } ,
 					gridWidth:			1500 ,
 					gridHeight:			1500
 				);
 			}
-			static void Index1dTo2d_VS_BurstSafePointToIndex2d ( float2 position , float2 gridWorldSize , int gridWidth , int gridHeight )
+			static void Index1dTo2d_VS_PointToIndex2d ( float2 position , float2 gridWorldSize , int gridWidth , int gridHeight )
 			{
 				int Ai = NativeGrid.PointToIndex( position , gridWorldSize , gridWidth , gridHeight );
 				int2 Ai2 = NativeGrid.Index1dTo2d( Ai , gridWidth );

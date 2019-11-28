@@ -95,8 +95,8 @@ public partial class NativeGrid <STRUCT>
 
 	/// <returns> Get ref to array element </returns>
 	/// <note> Make sure index is in bound </note>
-	public unsafe ref STRUCT AsRef ( int x , int y ) => ref AsRef( BurstSafe.Index2dTo1d( x , y , this.Width ) );
-	public unsafe ref STRUCT AsRef ( INT2 i2 ) => ref AsRef( BurstSafe.Index2dTo1d( i2 , this.Width ) );
+	public unsafe ref STRUCT AsRef ( int x , int y ) => ref AsRef( Index2dTo1d( x , y , this.Width ) );
+	public unsafe ref STRUCT AsRef ( INT2 i2 ) => ref AsRef( Index2dTo1d( i2 , this.Width ) );
 	public unsafe ref STRUCT AsRef ( int i ) => ref ( (STRUCT*)_array.GetUnsafePtr() )[i];
 
 

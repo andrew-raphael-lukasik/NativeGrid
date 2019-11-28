@@ -104,8 +104,8 @@ public abstract partial class NativeGrid
 	{
 		GetPositionInsideCell( point , new int2{ x=width , y=height } , worldSize , out int2 lo , out int2 hi , out float2 f );
 		int2 index = new int2{
-			x = BurstSafe.AboutEqual( f.x , 1f ) ? hi.x : lo.x ,
-			y = BurstSafe.AboutEqual( f.y , 1f ) ? hi.y : lo.y
+			x = AboutEqual( f.x , 1f ) ? hi.x : lo.x ,
+			y = AboutEqual( f.y , 1f ) ? hi.y : lo.y
 		};
 		return math.clamp( index , 0 , new int2{ x=width-1 , y=height-1 } );
 	}
