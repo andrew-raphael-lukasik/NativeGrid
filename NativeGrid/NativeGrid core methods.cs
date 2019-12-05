@@ -188,7 +188,11 @@ public partial class NativeGrid <STRUCT>
 	#region deallocation methods
 
 
-	public void Dispose () => _array.Dispose();
+	public void Dispose ()
+	{
+		if( _array.IsCreated )
+			_array.Dispose();
+	}
 
 
 	#endregion
