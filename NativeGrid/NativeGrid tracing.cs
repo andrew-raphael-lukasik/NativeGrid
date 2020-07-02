@@ -168,7 +168,7 @@ public abstract partial class NativeGrid
 	public static void EnumerateNeighbours ( NativeArray<int2> results , int width , int height , INT2 origin2 )
 	{
 		#if DEBUG
-		UnityEngine.Assertions.Assert.AreEqual( 8 , results.Length , "Array length must be 8" );
+		ASSERT_TRUE( results.Length==8 , "Array length must be 8" );
 		#endif
 		
 		int2 origin2d = origin2;

@@ -10,7 +10,7 @@ using Unity.Jobs;
 using Unity.Collections.LowLevel.Unsafe;
 
 using IComparerInt2 = System.Collections.Generic.IComparer<Unity.Mathematics.int2>;
-
+using Debug = UnityEngine.Debug;
 
 /// <summary>
 /// Abstract parent class for generic NativeGrid{STRUCT}. To simplify referencing static functions/types from "NativeGrid{byte}.Index1dTo2d(i)" to "NativeGrid.Index1dTo2d(i)".
@@ -234,8 +234,8 @@ public abstract partial class NativeGrid
 	)
 	{
 		#if UNITY_ASSERTIONS
-		Assert.IsTrue( destination.x>=0 && destination.y>=0 , $"destination: {destination} >= 0" );
-		Assert.IsTrue( destination.x<solvedGridWidth && destination.y<solvedGridWidth , $"destination: {destination} < {solvedGridWidth} solutionWidth" );
+		ASSERT_TRUE( destination.x>=0 && destination.y>=0 , $"destination: {destination} >= 0" );
+		ASSERT_TRUE( destination.x<solvedGridWidth && destination.y<solvedGridWidth , $"destination: {destination} < {solvedGridWidth} solutionWidth" );
 		#endif
 
 		int2 pos = destination;
@@ -255,7 +255,11 @@ public abstract partial class NativeGrid
 			int segmentedArrayIndex = segmentStart + step;
 			
 			#if UNITY_ASSERTIONS
-			if( segmentedArrayIndex<segmentStart || segmentedArrayIndex>segmentEnd ) throw new System.Exception($"{nameof(segmentedArrayIndex)} {segmentedArrayIndex} is outside it's range of {{{segmentStart}...{segmentEnd}}}");
+			if( segmentedArrayIndex<segmentStart || segmentedArrayIndex>segmentEnd )
+			{
+				// throw new System.Exception
+				Debug.LogError($"segmentedArrayIndex {segmentedArrayIndex} is outside it's range of {{{segmentStart}...{segmentEnd}}}");
+			}
 			#endif
 
 			segmentedIndices[segmentedArrayIndex] = pos;
@@ -275,7 +279,11 @@ public abstract partial class NativeGrid
 		for( int n=0 ; n<pathLength ; n++ )
 		{
 			int index = segmentStart + n;
-			if( math.all(segmentedIndices[index]==int2.zero) ) throw new System.Exception($"{nameof(segmentedIndices)}[{index}] is {segmentedIndices[index]}, {nameof(segmentStart)}: {segmentStart}, {nameof(segmentEnd)}: {segmentEnd}, {nameof(pathLength)}: {pathLength}, {nameof(step)}: {step}");
+			if( math.all(segmentedIndices[index]==int2.zero) )
+			{
+				// throw new System.Exception
+				Debug.LogError($"segmentedIndices[{index}] is {segmentedIndices[index]}, segmentStart: {segmentStart}, segmentEnd: {segmentEnd}, pathLength: {pathLength}, step: {step}");
+			}
 		}
 		#endif
 
@@ -286,7 +294,11 @@ public abstract partial class NativeGrid
 			int last = segmentStart + math.max( pathLength-1 , 0 );
 			
 			#if UNITY_ASSERTIONS
-			if( last>segmentEnd ) throw new System.Exception($"{nameof(last)} {last} > {segmentEnd} {nameof(segmentEnd)}");
+			if( last>segmentEnd )
+			{
+				// throw new System.Exception
+				Debug.LogError($"last {last} > {segmentEnd} segmentEnd");
+			}
 			#endif
 
 			ReverseArraySegment( segmentedIndices , first , last );
@@ -295,9 +307,9 @@ public abstract partial class NativeGrid
 		#if UNITY_ASSERTIONS
 		void localAssertions ()
 		{
-			string debugInfo = $"pos: {pos}, pos1d:{pos1d}, solution.Length:{solvedGrid.Length}, solutionWidth:{solvedGridWidth} squared: {solvedGridWidth}";
-			Assert.IsTrue( pos1d>=0 , debugInfo );
-			Assert.IsTrue( pos1d<solvedGrid.Length , debugInfo );
+			FixedString128 debugInfo = $"pos: {pos}, pos1d:{pos1d}, solution.Length:{solvedGrid.Length}, solutionWidth:{solvedGridWidth} squared: {solvedGridWidth}";
+			ASSERT_TRUE( pos1d>=0 , debugInfo );
+			ASSERT_TRUE( pos1d<solvedGrid.Length , debugInfo );
 		}
 		#endif
 
