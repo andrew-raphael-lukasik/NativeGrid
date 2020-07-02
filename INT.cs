@@ -17,7 +17,7 @@ public struct INT4
 
 	public static implicit operator int4 ( INT4 I4 ) => I4.Value;
 	public static implicit operator INT4 ( int4 i4 ) => new INT4{ Value=i4 };
-	public static implicit operator INT4 ( System.ValueTuple<int,int,int,int> tuple ) => new INT4{ Value=new int4{ x=tuple.Item1 , y=tuple.Item2 , z=tuple.Item3 , w=tuple.Item4 } };
+	public static implicit operator INT4 ( (int x,int y,int z,int w) tuple ) => new INT4{ Value=new int4{ x=tuple.x , y=tuple.y , z=tuple.z , w=tuple.w } };
 
 	public static int4 operator + ( INT4 a , INT4 b ) => a.Value + b.Value;
 	public static int4 operator - ( INT4 a , INT4 b ) => a.Value - b.Value;
@@ -42,7 +42,7 @@ public struct INT3
 	public static implicit operator INT3 ( int3 i3 ) => new INT3{ Value=i3 };
 	public static implicit operator INT3 ( Vector3Int v3 ) => new INT3{ Value=new int3{ x=v3.x , y=v3.y , z=v3.z } };
 	public static implicit operator Vector3Int ( INT3 I3 ) => new Vector3Int{ x=I3.Value.x , y=I3.Value.y , z=I3.Value.z };
-	public static implicit operator INT3 ( System.ValueTuple<int,int,int> tuple ) => new INT3{ Value=new int3{ x=tuple.Item1 , y=tuple.Item2 , z=tuple.Item3 } };
+	public static implicit operator INT3 ( (int x,int y,int z) tuple ) => new INT3{ Value=new int3{ x=tuple.x , y=tuple.y , z=tuple.z } };
 
 	public static int3 operator + ( INT3 a , INT3 b ) => a.Value + b.Value;
 	public static int3 operator - ( INT3 a , INT3 b ) => a.Value - b.Value;
@@ -64,7 +64,7 @@ public struct INT2
 	public static implicit operator INT2 ( int2 i2 ) => new INT2{ Value=i2 };
 	public static implicit operator INT2 ( Vector2Int v2 ) => new INT2{ Value=new int2{ x=v2.x , y=v2.y } };
 	public static implicit operator Vector2Int ( INT2 I2 ) => new Vector2Int{ x=I2.Value.x , y=I2.Value.y };
-	public static implicit operator INT2 ( System.ValueTuple<int,int> tuple ) => new INT2{ Value = new int2{ x=tuple.Item1 , y = tuple.Item2 } };
+	public static implicit operator INT2 ( (int x,int y) tuple ) => new INT2{ Value = new int2{ x=tuple.x , y=tuple.y } };
 	
 	public static int2 operator + ( INT2 a , INT2 b ) => a.Value + b.Value;
 	public static int2 operator - ( INT2 a , INT2 b ) => a.Value - b.Value;
