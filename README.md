@@ -27,3 +27,14 @@ TODO:
 ![astar gif goes here](https://i.imgur.com/vW5bVeQ.gif)
 
 Test window available under: Test>NativeGrid>Pathfinding
+
+# instalation
+Add this line in `manifest.json` / `dependencies`:
+```
+"com.andrewraphaellukasik.nativegrid": "https://github.com/andrew-raphael-lukasik/NativeGrid.git#upm",
+```
+
+Or via `Package Manager` / `Add package from git URL`:
+```
+https://github.com/andrew-raphael-lukasik/NativeGrid.git#upm
+```
