@@ -1,6 +1,10 @@
 {
   "name": "com.andrewraphaellukasik.nativegrid",
-  "author": "Andrzej Rafał Łukasik",
+  "author": {
+    "name": "Andrzej Rafał Łukasik",
+    "email": "andrew.r.lukasik@gmail.com",
+    "url": "https://github.com/andrew-raphael-lukasik"
+  },
   "displayName": "NativeGrid",
   "version": "1.0.0",
   "unity": "2019.1",
