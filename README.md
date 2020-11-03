@@ -28,7 +28,7 @@ TODO:
 
 Test window available under: Test>NativeGrid>Pathfinding
 
-# instalation
+# installation
 Add this line in `manifest.json` / `dependencies`:
 ```
 "com.andrewraphaellukasik.nativegrid": "https://github.com/andrew-raphael-lukasik/NativeGrid.git#upm",
