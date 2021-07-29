@@ -31,7 +31,7 @@ public abstract partial class NativeGrid
 
 		readonly int2 start;
 		readonly int2 destination;
-		[ReadOnly] readonly NativeArray<float> moveCost;
+		[ReadOnly] readonly NativeArray<byte> moveCost;
 		readonly int moveCost_width;
 		readonly float heuristic_cost;
 		readonly float heuristic_search;
@@ -54,7 +54,7 @@ public abstract partial class NativeGrid
 		(
 			INT2 start ,
 			INT2 destination ,
-			NativeArray<float> moveCost ,
+			NativeArray<byte> moveCost ,
 			int moveCost_width ,
 			float heuristic_cost ,
 			float heuristic_search ,
@@ -117,7 +117,7 @@ public abstract partial class NativeGrid
 					
 					bool isOrthogonal = math.any( node==neighbour );//is relative position orthogonal or diagonal
 
-					float g = node_f + moveCost[neighbour1d]*( isOrthogonal ? 1f : 1.41421356237f );
+					float g = node_f + (moveCost[neighbour1d]/255f) * ( isOrthogonal ? 1f : 1.41421356237f );
 					float h = EuclideanHeuristicNormalized( neighbour , destination , euclideanMaxLength )*heuristic_cost;
 					float f = g + h;
 					

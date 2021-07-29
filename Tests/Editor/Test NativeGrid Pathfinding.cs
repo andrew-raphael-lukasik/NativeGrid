@@ -158,15 +158,13 @@ namespace Tests
 		void SolvePath ()
 		{
 			//prepare data:
-			NativeArray<float> moveCost;
+			NativeArray<byte> moveCost;
 			{
 				int len = _resolution*_resolution;
-				moveCost = new NativeArray<float>( len , Allocator.TempJob , NativeArrayOptions.UninitializedMemory );
-				float[] arr = new float[len];//NativeArray enumeration is slow outside Burst
+				moveCost = new NativeArray<byte>( len , Allocator.TempJob , NativeArrayOptions.UninitializedMemory );
+				byte[] arr = new byte[len];// NativeArray enumeration is slow outside Burst
 				for( int i=len-1 ; i!=-1 ; i-- )
-				{
-					arr[i] = _grid[i].style.backgroundColor.value.r;
-				}
+					arr[i] = (byte)( _grid[i].style.backgroundColor.value.r * 255 );
 				moveCost.CopyFrom( arr );
 			}
 
