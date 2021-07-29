@@ -41,6 +41,7 @@ public abstract partial class NativeGrid
 		NativeMinHeap<int2,AStarJobComparer> frontier;
 		public NativeHashMap<int2,byte> visited;
 		NativeList<int2> neighbours;
+		public int _step_limit;
 
 		/// <summary> Traces path using some kind of A* algorithm </summary>
 		/// <param name="start"> Start index 2d </param>
@@ -58,7 +59,8 @@ public abstract partial class NativeGrid
 			int moveCost_width ,
 			float heuristic_cost ,
 			float heuristic_search ,
-			NativeList<int2> output_path
+			NativeList<int2> output_path ,
+			int step_limit = int.MaxValue
 		)
 		{
 			this.start = start;
@@ -71,37 +73,34 @@ public abstract partial class NativeGrid
 
 			int length = moveCost.Length;
 			int start1d = Index2dTo1d( start , moveCost_width );
-			_F_ = new NativeArray<float>( length , Allocator.TempJob , NativeArrayOptions.UninitializedMemory );
-			solution = new NativeArray<int2>( length , Allocator.TempJob );
-			frontier = new NativeMinHeap<int2,AStarJobComparer>(
+			this._F_ = new NativeArray<float>( length , Allocator.TempJob , NativeArrayOptions.UninitializedMemory );
+			this.solution = new NativeArray<int2>( length , Allocator.TempJob );
+			this.frontier = new NativeMinHeap<int2,AStarJobComparer>(
 				new AStarJobComparer( _F_ , moveCost_width , destination , heuristic_search ) ,
 				Allocator.TempJob , length
 			);
-			visited = new NativeHashMap<int2,byte>( length , Allocator.TempJob );//TODO: use actual hashSet once available
-			neighbours = new NativeList<int2>( 8 , Allocator.TempJob );
+			this.visited = new NativeHashMap<int2,byte>( length , Allocator.TempJob );//TODO: use actual hashSet once available
+			this.neighbours = new NativeList<int2>( 8 , Allocator.TempJob );
+			this._step_limit = step_limit;
 		}
 		public void Execute ()
 		{
 			int length = moveCost.Length;
 			int start1d = Index2dTo1d( start , moveCost_width );
 			{
-				for( int i=_F_.Length-1 ; i!=-1 ; i-- ) _F_[i] = float.MaxValue;
+				for( int i=_F_.Length-1 ; i!=-1 ; i-- )
+					_F_[i] = float.MaxValue;
 				_F_[start1d] = 0;
 			}
-			{
-				solution[start1d] = start;
-			}
-			{
-				frontier.Push( start );
-			}
-			{
-				visited.TryAdd( start , 0 );
-			}
+			solution[start1d] = start;
+			frontier.Push( start );
+			visited.TryAdd( start , 0 );
 			
 			//solve;
 			float euclideanMaxLength = EuclideanHeuristicMaxLength( length , moveCost_width );
 			int2 node = int2.zero-1;
-			while( frontier.Count!=0 && math.any(node!=destination) )
+			int step = 0;
+			while( frontier.Count!=0 && math.any(node!=destination) && step++<_step_limit )
 			{
 				node = frontier.Pop();//we grab candidate with lowest F so far
 				int node1d = Index2dTo1d( node , moveCost_width );
@@ -122,9 +121,7 @@ public abstract partial class NativeGrid
 					float f = g + h;
 					
 					//update F when this connection is less costly:
-					if(
-						f<_F_[neighbour1d]
-					)
+					if( f<_F_[neighbour1d] )
 					{
 						_F_[neighbour1d] = f;
 						solution[neighbour1d] = node;
@@ -132,9 +129,7 @@ public abstract partial class NativeGrid
 
 					//update frontier:
 					if( visited.TryAdd(neighbour,0) )
-					{
 						frontier.Push(neighbour);
-					}
 				}
 			}
 
@@ -143,11 +138,11 @@ public abstract partial class NativeGrid
 		}
 		public void Dispose ()
 		{
-			_F_.Dispose();
-			solution.Dispose();
-			frontier.Dispose();
-			visited.Dispose();
-			neighbours.Dispose();
+			this._F_.Dispose();
+			this.solution.Dispose();
+			this.frontier.Dispose();
+			this.visited.Dispose();
+			this.neighbours.Dispose();
 		}
 	}
 	

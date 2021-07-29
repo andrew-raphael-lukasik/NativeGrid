@@ -21,6 +21,7 @@ namespace Tests
 		float heuristic_cost = 0.001f;
 		float heuristic_search = 20f;
 		float2 _smoothstep = new float2{ x=0.1f , y=0.3f };// perlin noise post process
+		int _steplimit = int.MaxValue;
 
 		const int _drawTextMaxResolution = 50;
 		bool labelsExist => _resolution<=_drawTextMaxResolution;
@@ -80,6 +81,26 @@ namespace Tests
 				Repaint();
 			} );
 			TOOLBAR.Add( SMOOTHSTEP );
+
+			var STEPLIMIT = new IntegerField("Step Limit");
+			{
+				STEPLIMIT.value = _steplimit;
+				STEPLIMIT.RegisterValueChangedCallback( (ctx) => {
+					if( ctx.newValue>=0 )
+					{
+						_steplimit = ctx.newValue;
+					}
+					else
+					{
+						_steplimit = 0;
+						STEPLIMIT.SetValueWithoutNotify( 0 );
+					}
+					NewRandomMap();
+					SolvePath();
+					Repaint();
+				} );
+			}
+			TOOLBAR.Add( STEPLIMIT );
 
 			{
 				var gridStyle = GRID.style;
@@ -187,7 +208,8 @@ namespace Tests
 					moveCost_width:		_resolution ,
 					heuristic_cost:		heuristic_cost ,
 					heuristic_search:	heuristic_search ,
-					output_path:		path
+					output_path:		path ,
+					step_limit:			_steplimit
 				);
 				job.Run();
 
