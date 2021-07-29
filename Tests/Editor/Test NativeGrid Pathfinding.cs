@@ -12,7 +12,6 @@ namespace Tests
 	public class Test_NativeGrid_Pathfinding : EditorWindow
 	{
 
-		const float _pxSize = 512;
 		VisualElement[] _grid;
 		int _resolution = 128;
 		float _offset = 0f;
@@ -69,8 +68,7 @@ namespace Tests
 
 			// GRID:
 			var gridStyle = GRID.style;
-			gridStyle.width = _pxSize;
-			gridStyle.height = _pxSize;
+			gridStyle.flexGrow = 1;
 			gridStyle.marginBottom = gridStyle.marginLeft = gridStyle.marginRight = gridStyle.marginTop = 2;
 			gridStyle.backgroundColor = new Color( 0f , 0f , 0f , 0.02f );
 			GRID.RegisterCallback( (MouseDownEvent e)=>{
@@ -91,35 +89,29 @@ namespace Tests
 		{
 			var window = GetWindow<Test_NativeGrid_Pathfinding>();
 			window.titleContent = new GUIContent("NativeGrid Pathfinding Test");
-			window.minSize = window.maxSize = new Vector2{ x=_pxSize+4 , y=_pxSize+4+60 };
+			window.minSize = new Vector2{ x=512+4 , y=512+4+60 };
 		}
 
 		void CreateGridLayout ( VisualElement GRID )
 		{
-			float pxCell = _pxSize / (float)_resolution;
 			_grid = new VisualElement[ _resolution*_resolution ];
 			for( int i=0, y=0 ; y<_resolution ; y++ )
 			{
 				var ROW = new VisualElement();
 				var rowStyle = ROW.style;
 				rowStyle.flexDirection = FlexDirection.RowReverse;
-				rowStyle.width = _pxSize;
-				rowStyle.height = pxCell;
+				rowStyle.flexGrow = 1;
 
 				for( int x=0 ; x<_resolution ; x++, i++ )
 				{
 					var CELL = new VisualElement();
-					var cellStyle = CELL.style;
-					cellStyle.width = pxCell;
-					cellStyle.height = pxCell;
-
+					CELL.style.flexGrow = 1;
 					if( labelsExist )
 					{
 						var LABEL = new Label("00");
 						LABEL.visible = false;
-						var style = LABEL.style;
-						style.fontSize = pxCell/5;
-						style.alignSelf = Align.Stretch;
+						LABEL.StretchToParentSize();
+						LABEL.style.unityTextAlign = TextAnchor.MiddleCenter;
 						CELL.Add( LABEL );
 					}
 
