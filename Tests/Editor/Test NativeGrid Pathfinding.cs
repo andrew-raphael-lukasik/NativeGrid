@@ -14,12 +14,13 @@ namespace Tests
 
 		VisualElement[] _grid;
 		int _resolution = 128;
-		float _offset = 0f;
+		float2 _offset = 0f;// perlin noise pos offset
 
-		float2 _p1 = new float2{ x=0.1f , y=0.1f };
-		float2 _p2 = new float2{ x=0.9f , y=0.9f };
+		float2 _start01 = new float2{ x=0.1f , y=0.1f };
+		float2 _dest01 = new float2{ x=0.9f , y=0.9f };
 		float heuristic_cost = 0.001f;
 		float heuristic_search = 20f;
+		float2 _smoothstep = new float2{ x=0.1f , y=0.3f };// perlin noise post process
 
 		const int _drawTextMaxResolution = 50;
 		bool labelsExist => _resolution<=_drawTextMaxResolution;
@@ -28,6 +29,9 @@ namespace Tests
 		{
 			var ROOT = rootVisualElement;
 			var GRID = new VisualElement();
+			var TOOLBAR = new VisualElement();
+			ROOT.Add( TOOLBAR );
+			ROOT.Add( GRID );
 
 			var RESOLUTION = new IntegerField( "Resolution:" );
 			RESOLUTION.style.paddingLeft = RESOLUTION.style.paddingRight = 10;
@@ -40,9 +44,8 @@ namespace Tests
 				NewRandomMap();
 				Repaint();
 			} );
-			ROOT.Add( RESOLUTION );
+			TOOLBAR.Add( RESOLUTION );
 
-			// COST HEURISTIC:
 			var HEURISTIC_COST = new FloatField( $"Cost Heuristic:" );
 			HEURISTIC_COST.style.paddingLeft = HEURISTIC_COST.style.paddingRight = 10;
 			HEURISTIC_COST.value = heuristic_cost;
@@ -52,9 +55,8 @@ namespace Tests
 				SolvePath();
 				Repaint();
 			} );
-			ROOT.Add( HEURISTIC_COST );
+			TOOLBAR.Add( HEURISTIC_COST );
 
-			// SEARCH HEURISTIC:
 			var HEURISTIC_SEARCH = new FloatField( $"Search Heuristic:" );
 			HEURISTIC_SEARCH.style.paddingLeft = HEURISTIC_SEARCH.style.paddingRight = 10;
 			HEURISTIC_SEARCH.value = heuristic_search;
@@ -64,20 +66,33 @@ namespace Tests
 				SolvePath();
 				Repaint();
 			} );
-			ROOT.Add( HEURISTIC_SEARCH );
+			TOOLBAR.Add( HEURISTIC_SEARCH );
 
-			// GRID:
-			var gridStyle = GRID.style;
-			gridStyle.flexGrow = 1;
-			gridStyle.marginBottom = gridStyle.marginLeft = gridStyle.marginRight = gridStyle.marginTop = 2;
-			gridStyle.backgroundColor = new Color( 0f , 0f , 0f , 0.02f );
-			GRID.RegisterCallback( (MouseDownEvent e)=>{
-				_offset = (float)EditorApplication.timeSinceStartup;
+			var SMOOTHSTEP = new MinMaxSlider( "Levels" , _smoothstep.x , _smoothstep.y , 0 , 1 );
+			{
+				var style = SMOOTHSTEP.style;
+				style.marginBottom = style.marginLeft = style.marginRight = style.marginTop = 2;
+			}
+			SMOOTHSTEP.RegisterValueChangedCallback( (ctx) => {
+				_smoothstep = ctx.newValue;
 				NewRandomMap();
 				SolvePath();
 				Repaint();
 			} );
-			ROOT.Add( GRID );
+			TOOLBAR.Add( SMOOTHSTEP );
+
+			{
+				var gridStyle = GRID.style;
+				gridStyle.flexGrow = 1;
+				gridStyle.marginBottom = gridStyle.marginLeft = gridStyle.marginRight = gridStyle.marginTop = 2;
+				gridStyle.backgroundColor = new Color{ a = 0.02f };
+			}
+			GRID.RegisterCallback( (MouseDownEvent e)=>{
+				_offset = (float) EditorApplication.timeSinceStartup;
+				NewRandomMap();
+				SolvePath();
+				Repaint();
+			} );
 			CreateGridLayout( GRID );
 
 			NewRandomMap();
@@ -129,13 +144,14 @@ namespace Tests
 			for( int i=0, y=0 ; y<_resolution ; y++ )
 			for( int x=0 ; x<_resolution ; x++, i++ )
 			{
-				float fx = (float)x * frac * 4f + _offset;
-				float fy = (float)y * frac * 4f + _offset;
+				float fx = (float)x * frac * 4f + _offset.x;
+				float fy = (float)y * frac * 4f + _offset.y;
 				float noise1 = Mathf.PerlinNoise( fx , fy );
 				float noise2 = math.pow( Mathf.PerlinNoise(fx*2.3f,fy*2.3f) , 3f );
 				float noise3 = math.pow( Mathf.PerlinNoise(fx*14f,fy*14f) , 6f ) * (1f-noise1) * (1f-noise2);
 				float noiseSum = math.pow( noise1 + noise2*0.3f + noise3*0.08f , 3.6f );
-				_grid[i].style.backgroundColor = new Color{ r=noiseSum , g=noiseSum , b=noiseSum , a=1f };
+				float smoothstep = math.smoothstep( _smoothstep.x , _smoothstep.y , noiseSum );
+				_grid[i].style.backgroundColor = new Color{ r=smoothstep , g=smoothstep , b=smoothstep , a=1f };
 			}
 		}
 
@@ -167,11 +183,13 @@ namespace Tests
 
 				//run job:
 				var job = new NativeGrid.AStarJob(
-					(int2)( _p1 * _resolution ) , (int2)( _p2 * _resolution ) ,
-					moveCost , _resolution ,
-					heuristic_cost ,
-					heuristic_search ,
-					path
+					start: 				(int2)( _start01 * _resolution ) ,
+					destination:		(int2)( _dest01 * _resolution ) ,
+					moveCost:			moveCost ,
+					moveCost_width:		_resolution ,
+					heuristic_cost:		heuristic_cost ,
+					heuristic_search:	heuristic_search ,
+					output_path:		path
 				);
 				job.Run();
 
