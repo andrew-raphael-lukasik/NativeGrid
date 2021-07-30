@@ -33,6 +33,8 @@ public abstract partial class NativeGrid
 		readonly int2 Destination;
 		[ReadOnly] readonly NativeArray<byte> MoveCost;
 		readonly int MoveCostWidth;
+		readonly float HMultiplier;
+		readonly float GMultiplier;
 
 		public NativeArray<half> GData;
 		public NativeArray<half> FData;
@@ -55,6 +57,8 @@ public abstract partial class NativeGrid
 			NativeArray<byte> moveCost ,
 			int moveCostWidth ,
 			NativeList<int2> results ,
+			float hMultiplier = 1 ,
+			float gMultiplier = 1 ,
 			int step_limit = int.MaxValue
 		)
 		{
@@ -63,6 +67,9 @@ public abstract partial class NativeGrid
 			this.MoveCost = moveCost;
 			this.MoveCostWidth = moveCostWidth;
 			this.Results = results;
+			this.HMultiplier = hMultiplier;
+			this.GMultiplier = gMultiplier;
+			this.StepLimit = step_limit;
 
 			int length = moveCost.Length;
 			int start1d = Index2dTo1d( start , moveCostWidth );
@@ -75,7 +82,6 @@ public abstract partial class NativeGrid
 			);
 			this.Visited = new NativeHashSet<int2>( length , Allocator.TempJob );
 			this.Neighbours = new NativeList<int2>( 8 , Allocator.TempJob );
-			this.StepLimit = step_limit;
 		}
 		public void Execute ()
 		{
@@ -128,20 +134,20 @@ public abstract partial class NativeGrid
 						// g - dist from start node
 						// h - dist from dest node as predicted by heuristic func
 
-						float g = node_g + ( 1f + movecost ) * ( orthogonal ? 1f : 1.41421356237f );
-						float h = EuclideanHeuristic( neighbour , Destination );
+						float g = node_g + ( 1f + movecost ) * ( orthogonal ? 1f : 1.41421356237f ) * GMultiplier;
+						float h = EuclideanHeuristic( neighbour , Destination ) * HMultiplier;
 						float f = g + h;
 						
 						// update G:
 						if( g<GData[neighbour1d] )
 						{
-							GData[neighbour1d] = (half) g;
+							GData[neighbour1d] = (half) math.min( g , half.MaxValue );
 						}
 
 						// update F:
 						if( f<FData[neighbour1d] )
 						{
-							FData[neighbour1d] = (half) f;
+							FData[neighbour1d] = (half) math.min( f , half.MaxValue );
 							Solution[neighbour1d] = node;
 						}
 

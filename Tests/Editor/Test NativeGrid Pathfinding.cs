@@ -16,10 +16,12 @@ namespace Tests
 		int _resolution = 128;
 		float2 _offset = 0f;// perlin noise pos offset
 		float2 _start01 = new float2{ x=0.1f , y=0.1f };
-		int2 startI2 => (int2)( _start01 * (_resolution-1) );
+		int2 _startI2 => (int2)( _start01 * (_resolution-1) );
 		float2 _dest01 = new float2{ x=0.9f , y=0.9f };
-		int2 destI2 => (int2)( _dest01 * (_resolution-1) );
+		int2 _destI2 => (int2)( _dest01 * (_resolution-1) );
 		float2 _smoothstep = new float2{ x=0.1f , y=0.3f };// perlin noise post process
+		float _hMultiplier = 1;
+		float _gMultiplier = 1;
 		int _steplimit = int.MaxValue;
 
 		const int _drawTextMaxResolution = 50;
@@ -66,27 +68,27 @@ namespace Tests
 			} );
 			TOOLBAR_COLUMN_0.Add( RESOLUTION );
 
-			// var HEURISTIC_COST = new FloatField( $"Euclidean heuristic x:" );
-			// HEURISTIC_COST.style.paddingLeft = HEURISTIC_COST.style.paddingRight = 10;
-			// HEURISTIC_COST.value = euclidean_heuristic_multiplier;
-			// HEURISTIC_COST.RegisterValueChangedCallback( (e)=> {
-			// 	euclidean_heuristic_multiplier = e.newValue;
-			// 	NewRandomMap();
-			// 	SolvePath();
-			// 	Repaint();
-			// } );
-			// TOOLBAR_COLUMN_0.Add( HEURISTIC_COST );
+			var HEURISTIC_COST = new FloatField( $"H Multiplier" );
+			HEURISTIC_COST.style.paddingLeft = HEURISTIC_COST.style.paddingRight = 10;
+			HEURISTIC_COST.value = _hMultiplier;
+			HEURISTIC_COST.RegisterValueChangedCallback( (e)=> {
+				_hMultiplier = e.newValue;
+				NewRandomMap();
+				SolvePath();
+				Repaint();
+			} );
+			TOOLBAR_COLUMN_0.Add( HEURISTIC_COST );
 
-			// var HEURISTIC_SEARCH = new FloatField( $"Search Heuristic:" );
-			// HEURISTIC_SEARCH.style.paddingLeft = HEURISTIC_SEARCH.style.paddingRight = 10;
-			// HEURISTIC_SEARCH.value = heuristic_search;
-			// HEURISTIC_SEARCH.RegisterValueChangedCallback( (e)=> {
-			// 	heuristic_search = e.newValue;
-			// 	NewRandomMap();
-			// 	SolvePath();
-			// 	Repaint();
-			// } );
-			// TOOLBAR_COLUMN_0.Add( HEURISTIC_SEARCH );
+			var HEURISTIC_SEARCH = new FloatField( $"G Multiplier:" );
+			HEURISTIC_SEARCH.style.paddingLeft = HEURISTIC_SEARCH.style.paddingRight = 10;
+			HEURISTIC_SEARCH.value = _gMultiplier;
+			HEURISTIC_SEARCH.RegisterValueChangedCallback( (e)=> {
+				_gMultiplier = e.newValue;
+				NewRandomMap();
+				SolvePath();
+				Repaint();
+			} );
+			TOOLBAR_COLUMN_0.Add( HEURISTIC_SEARCH );
 
 			var SMOOTHSTEP = new MinMaxSlider( "Levels" , _smoothstep.x , _smoothstep.y , 0 , 1 );
 			{
@@ -159,7 +161,7 @@ namespace Tests
 				START_DEST_LINE.Add( END_Y );
 				START_DEST_LINE.Add( SPACE );
 			}
-			TOOLBAR_COLUMN_0.Add( START_DEST_LINE );
+			TOOLBAR_COLUMN_1.Add( START_DEST_LINE );
 
 			var STEPLIMIT = new IntegerField("Step Limit");
 			{
@@ -291,11 +293,13 @@ namespace Tests
 				// run job:
 				var watch = System.Diagnostics.Stopwatch.StartNew();
 				var job = new NativeGrid.AStarJob(
-					start: 								startI2 ,
-					destination:						destI2 ,
+					start: 								_startI2 ,
+					destination:						_destI2 ,
 					moveCost:							moveCost ,
 					moveCostWidth:						_resolution ,
 					results:							path ,
+					hMultiplier:						_hMultiplier ,
+					gMultiplier:						_gMultiplier ,
 					step_limit:							_steplimit
 				);
 				job.Run();
@@ -316,7 +320,7 @@ namespace Tests
 			// visualize:
 			{
 				// start cell
-				int startI = NativeGrid.Index2dTo1d( startI2 , _resolution );
+				int startI = NativeGrid.Index2dTo1d( _startI2 , _resolution );
 				var cellStyle = _grid[startI].style;
 				Color col = cellStyle.backgroundColor.value * 0.75f;
 				col.r = 1f;
@@ -349,7 +353,7 @@ namespace Tests
 
 				var f = fData[i];
 				var g = gData[i];
-				var h = NativeGrid.EuclideanHeuristic( i2 , destI2 );
+				var h = NativeGrid.EuclideanHeuristic( i2 , _destI2 );
 				int2 origin = solution[i];
 				if( f!=float.MaxValue )
 				{
