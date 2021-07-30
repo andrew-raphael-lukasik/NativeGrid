@@ -6,7 +6,7 @@ public unsafe struct NativeStack <VALUE>
 	where VALUE : unmanaged
 {
 
-	[NativeDisableUnsafePtrRestriction] internal VALUE* _buffer;
+	[NativeDisableUnsafePtrRestriction] internal VALUE* _ptr;
 	internal int _capacity;
 	internal Allocator _allocator;
 	internal readonly int _sizeOfValue;
@@ -14,7 +14,7 @@ public unsafe struct NativeStack <VALUE>
 
 	internal int _lastItemIndex;
 	public int LastItemIndex => _lastItemIndex;
-	public int Count => _lastItemIndex + 1;
+	public int Length => _lastItemIndex + 1;
 
 	public NativeStack ( int capacity , Allocator allocator  )
 	{
@@ -22,7 +22,7 @@ public unsafe struct NativeStack <VALUE>
 		_alignOfValue = UnsafeUtility.AlignOf<VALUE>();
 		_allocator = allocator;
 		_capacity = capacity;
-		_buffer = (VALUE*)UnsafeUtility.Malloc( _sizeOfValue * _capacity , _alignOfValue , _allocator );
+		_ptr = (VALUE*)UnsafeUtility.Malloc( _sizeOfValue * _capacity , _alignOfValue , _allocator );
 		_lastItemIndex = -1;
 	}
 
@@ -34,7 +34,7 @@ public unsafe struct NativeStack <VALUE>
 			if( i<0 || i>_lastItemIndex ) throw new System.IndexOutOfRangeException($"Index {i} is out of range for buffer capacity of {_capacity}");
 			#endif
 			
-			return UnsafeUtility.ReadArrayElement<VALUE>( _buffer , i );
+			return UnsafeUtility.ReadArrayElement<VALUE>( _ptr , i );
 		}
 		set
 		{
@@ -42,7 +42,7 @@ public unsafe struct NativeStack <VALUE>
 			if( i<0 || i>_lastItemIndex ) throw new System.IndexOutOfRangeException($"Index {i} is out of range for buffer capacity of {_capacity}");
 			#endif
 
-			UnsafeUtility.WriteArrayElement( _buffer , i , value );
+			UnsafeUtility.WriteArrayElement( _ptr , i , value );
 		}
 	}
 	
@@ -78,9 +78,19 @@ public unsafe struct NativeStack <VALUE>
 
 	public void Dispose ()
 	{
-		UnsafeUtility.Free( _buffer , _allocator );
-		_buffer = null;
+		UnsafeUtility.Free( _ptr , _allocator );
+		_ptr = null;
 		_lastItemIndex = -1;
+	}
+
+	/// <returns>A NativeArray "view" of the data.</returns>
+	public NativeArray<VALUE> AsArray ()
+	{
+		var nativeArray = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<VALUE>( this._ptr , this.Length , Allocator.None );
+		#if ENABLE_UNITY_COLLECTIONS_CHECKS
+		NativeArrayUnsafeUtility.SetAtomicSafetyHandle( ref nativeArray , AtomicSafetyHandle.Create() );
+		#endif
+		return nativeArray;
 	}
 
 }

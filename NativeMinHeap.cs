@@ -1,7 +1,5 @@
-using Unity.Mathematics;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
-
 
 public unsafe struct NativeMinHeap <VALUE,COMPARER>
 	: System.IDisposable
@@ -11,10 +9,11 @@ public unsafe struct NativeMinHeap <VALUE,COMPARER>
 
 	readonly Allocator _allocator;
 	NativeStack<VALUE> _stack;
-	public int Count => _stack.Count;
 
-	[NativeDisableUnsafePtrRestriction]
-	COMPARER* _comparer;
+	public int Length => _stack.Length;
+	public int Count => _stack.Length;
+	
+	[NativeDisableUnsafePtrRestriction] COMPARER* _comparer;
 	
 
 	public NativeMinHeap ( COMPARER comparer , Allocator allocator , int capacity )
@@ -92,10 +91,34 @@ public unsafe struct NativeMinHeap <VALUE,COMPARER>
 		}
 	}
 
+
+	public int Parent ( int key ) => (key-1)/2;
+	public int Left ( int key ) => 2*key + 1;
+	public int Right ( int key ) => 2*key + 2;
+
+
+	/// <returns>A NativeArray "view" of the data.</returns>
+	public NativeArray<VALUE> AsArray () => _stack.AsArray();
+
+
 	public void Dispose ()
 	{
 		_stack.Dispose();
 		UnsafeUtility.Free( _comparer , _allocator );
+	}
+
+	public override string ToString ()
+	{
+		var sb = new System.Text.StringBuilder("{ ");
+		var array = _stack.AsArray().ToArray();
+		if( array.Length!=0 )
+		{
+			sb.Append($"{array[0]}");
+			for( int i=1 ; i<array.Length ; i++ )
+				sb.Append($" , {array[i]}");
+		}
+		sb.Append(" }");
+		return sb.ToString();
 	}
 
 }

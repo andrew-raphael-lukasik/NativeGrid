@@ -12,15 +12,17 @@ namespace Tests
 	public class Test_NativeGrid_Pathfinding : EditorWindow
 	{
 
-		const float _pxSize = 512;
 		VisualElement[] _grid;
 		int _resolution = 128;
-		float _offset = 0f;
-
-		float2 _p1 = new float2{ x=0.1f , y=0.1f };
-		float2 _p2 = new float2{ x=0.9f , y=0.9f };
-		float heuristic_cost = 0.001f;
-		float heuristic_search = 20f;
+		float2 _offset = 0f;// perlin noise pos offset
+		float2 _start01 = new float2{ x=0.1f , y=0.1f };
+		int2 _startI2 => (int2)( _start01 * (_resolution-1) );
+		float2 _dest01 = new float2{ x=0.9f , y=0.9f };
+		int2 _destI2 => (int2)( _dest01 * (_resolution-1) );
+		float2 _smoothstep = new float2{ x=0f , y=0.8f };// perlin noise post process
+		float _hMultiplier = 1.5f;
+		float _moveCostSensitivity = 10f;
+		int _stepBudget = int.MaxValue;
 
 		const int _drawTextMaxResolution = 50;
 		bool labelsExist => _resolution<=_drawTextMaxResolution;
@@ -29,6 +31,28 @@ namespace Tests
 		{
 			var ROOT = rootVisualElement;
 			var GRID = new VisualElement();
+			var TOOLBAR = new VisualElement();
+			var TOOLBAR_COLUMN_0 = new VisualElement();
+			var TOOLBAR_COLUMN_1 = new VisualElement();
+			ROOT.Add( TOOLBAR );
+			TOOLBAR.Add( TOOLBAR_COLUMN_0 );
+			TOOLBAR.Add( TOOLBAR_COLUMN_1 );
+			ROOT.Add( GRID );
+
+			{
+				var style = TOOLBAR.style;
+				style.flexDirection = FlexDirection.Row;
+			}
+			{
+				var style = TOOLBAR_COLUMN_0.style;
+				style.width = new Length( 50f , LengthUnit.Percent );
+				style.flexDirection = FlexDirection.Column;
+			}
+			{
+				var style = TOOLBAR_COLUMN_1.style;
+				style.width = new Length( 50f , LengthUnit.Percent );
+				style.flexDirection = FlexDirection.Column;
+			}
 
 			var RESOLUTION = new IntegerField( "Resolution:" );
 			RESOLUTION.style.paddingLeft = RESOLUTION.style.paddingRight = 10;
@@ -39,47 +63,148 @@ namespace Tests
 				GRID.Clear();
 				CreateGridLayout( GRID );
 				NewRandomMap();
+				SolvePath();
 				Repaint();
 			} );
-			ROOT.Add( RESOLUTION );
+			TOOLBAR_COLUMN_0.Add( RESOLUTION );
 
-			// COST HEURISTIC:
-			var HEURISTIC_COST = new FloatField( $"Cost Heuristic:" );
+			var HEURISTIC_COST = new FloatField( $"H Multiplier:" );
 			HEURISTIC_COST.style.paddingLeft = HEURISTIC_COST.style.paddingRight = 10;
-			HEURISTIC_COST.value = heuristic_cost;
+			HEURISTIC_COST.value = _hMultiplier;
 			HEURISTIC_COST.RegisterValueChangedCallback( (e)=> {
-				heuristic_cost = e.newValue;
+				_hMultiplier = e.newValue;
 				NewRandomMap();
 				SolvePath();
 				Repaint();
 			} );
-			ROOT.Add( HEURISTIC_COST );
+			TOOLBAR_COLUMN_0.Add( HEURISTIC_COST );
 
-			// SEARCH HEURISTIC:
-			var HEURISTIC_SEARCH = new FloatField( $"Search Heuristic:" );
+			var HEURISTIC_SEARCH = new FloatField( $"Move Cost Multiplier:" );
 			HEURISTIC_SEARCH.style.paddingLeft = HEURISTIC_SEARCH.style.paddingRight = 10;
-			HEURISTIC_SEARCH.value = heuristic_search;
+			HEURISTIC_SEARCH.value = _moveCostSensitivity;
 			HEURISTIC_SEARCH.RegisterValueChangedCallback( (e)=> {
-				heuristic_search = e.newValue;
+				_moveCostSensitivity = e.newValue;
 				NewRandomMap();
 				SolvePath();
 				Repaint();
 			} );
-			ROOT.Add( HEURISTIC_SEARCH );
+			TOOLBAR_COLUMN_0.Add( HEURISTIC_SEARCH );
 
-			// GRID:
-			var gridStyle = GRID.style;
-			gridStyle.width = _pxSize;
-			gridStyle.height = _pxSize;
-			gridStyle.marginBottom = gridStyle.marginLeft = gridStyle.marginRight = gridStyle.marginTop = 2;
-			gridStyle.backgroundColor = new Color( 0f , 0f , 0f , 0.02f );
-			GRID.RegisterCallback( (MouseDownEvent e)=>{
-				_offset = (float)EditorApplication.timeSinceStartup;
+			var SMOOTHSTEP = new MinMaxSlider( "Move Cost Range:" , _smoothstep.x , _smoothstep.y , 0 , 1 );
+			{
+				var style = SMOOTHSTEP.style;
+				style.marginBottom = style.marginLeft = style.marginRight = style.marginTop = 2;
+			}
+			SMOOTHSTEP.RegisterValueChangedCallback( (ctx) => {
+				_smoothstep = ctx.newValue;
 				NewRandomMap();
 				SolvePath();
 				Repaint();
 			} );
-			ROOT.Add( GRID );
+			TOOLBAR_COLUMN_1.Add( SMOOTHSTEP );
+
+			var START_DEST_LINE = new VisualElement();
+			{
+				// START_DEST_LINE.style.flexGrow = 1;
+				START_DEST_LINE.style.flexDirection = FlexDirection.Row;
+
+				var SPACE = new VisualElement();
+				SPACE.style.flexGrow = 1;
+
+				var START = new Label("Start:");
+				var START_X = new Slider( 0 , 1 );
+				var START_Y = new Slider( 0 , 1 );
+				START_X.value = _start01.x;
+				START_Y.value = _start01.y;
+				START_X.style.flexGrow = 1;
+				START_Y.style.flexGrow = 1;
+				START_X.RegisterValueChangedCallback( (ctx) => {
+					_start01.x = ctx.newValue;
+					NewRandomMap();
+					SolvePath();
+					Repaint();
+				} );
+				START_Y.RegisterValueChangedCallback( (ctx) => {
+					_start01.y = ctx.newValue;
+					NewRandomMap();
+					SolvePath();
+					Repaint();
+				} );
+				START_DEST_LINE.Add( START );
+				START_DEST_LINE.Add( SPACE );
+				START_DEST_LINE.Add( START_X );
+				START_DEST_LINE.Add( START_Y );
+				START_DEST_LINE.Add( SPACE );
+
+				var END = new Label("End:");
+				var END_X = new Slider( 0 , 1 );
+				var END_Y = new Slider( 0 , 1 );
+				END_X.value = _dest01.x;
+				END_Y.value = _dest01.y;
+				END_X.style.flexGrow = 1;
+				END_Y.style.flexGrow = 1;
+				END_X.RegisterValueChangedCallback( (ctx) => {
+					_dest01.x = ctx.newValue;
+					NewRandomMap();
+					SolvePath();
+					Repaint();
+				} );
+				END_Y.RegisterValueChangedCallback( (ctx) => {
+					_dest01.y = ctx.newValue;
+					NewRandomMap();
+					SolvePath();
+					Repaint();
+				} );
+				START_DEST_LINE.Add( END );
+				START_DEST_LINE.Add( SPACE );
+				START_DEST_LINE.Add( END_X );
+				START_DEST_LINE.Add( END_Y );
+				START_DEST_LINE.Add( SPACE );
+			}
+			TOOLBAR_COLUMN_1.Add( START_DEST_LINE );
+
+			var STEPLIMIT = new IntegerField("Step Budget:");
+			{
+				STEPLIMIT.value = _stepBudget;
+				STEPLIMIT.RegisterValueChangedCallback( (ctx) => {
+					if( ctx.newValue>=0 )
+					{
+						_stepBudget = ctx.newValue;
+					}
+					else
+					{
+						_stepBudget = 0;
+						STEPLIMIT.SetValueWithoutNotify( 0 );
+					}
+					NewRandomMap();
+					SolvePath();
+					Repaint();
+				} );
+				STEPLIMIT.RegisterCallback( (WheelEvent e) => {
+					Vector2 mouseScrollDelta = e.mouseDelta;
+					int scrollDir = (int) Mathf.Sign(mouseScrollDelta.y);
+					_stepBudget = Mathf.Max( _stepBudget - scrollDir , 0 );
+					STEPLIMIT.SetValueWithoutNotify( _stepBudget );
+					NewRandomMap();
+					SolvePath();
+					Repaint();
+				} );
+			}
+			TOOLBAR_COLUMN_1.Add( STEPLIMIT );
+
+			{
+				var gridStyle = GRID.style;
+				gridStyle.flexGrow = 1;
+				gridStyle.flexDirection = FlexDirection.ColumnReverse;
+				gridStyle.marginBottom = gridStyle.marginLeft = gridStyle.marginRight = gridStyle.marginTop = 2;
+				gridStyle.backgroundColor = new Color{ a = 0.02f };
+			}
+			GRID.RegisterCallback( (MouseDownEvent e)=>{
+				_offset = (float) EditorApplication.timeSinceStartup;
+				NewRandomMap();
+				SolvePath();
+				Repaint();
+			} );
 			CreateGridLayout( GRID );
 
 			NewRandomMap();
@@ -91,35 +216,30 @@ namespace Tests
 		{
 			var window = GetWindow<Test_NativeGrid_Pathfinding>();
 			window.titleContent = new GUIContent("NativeGrid Pathfinding Test");
-			window.minSize = window.maxSize = new Vector2{ x=_pxSize+4 , y=_pxSize+4+60 };
+			window.minSize = new Vector2{ x=512+4 , y=512+4+60 };
 		}
 
 		void CreateGridLayout ( VisualElement GRID )
 		{
-			float pxCell = _pxSize / (float)_resolution;
 			_grid = new VisualElement[ _resolution*_resolution ];
 			for( int i=0, y=0 ; y<_resolution ; y++ )
 			{
 				var ROW = new VisualElement();
 				var rowStyle = ROW.style;
-				rowStyle.flexDirection = FlexDirection.RowReverse;
-				rowStyle.width = _pxSize;
-				rowStyle.height = pxCell;
+				rowStyle.flexDirection = FlexDirection.Row;
+				rowStyle.flexGrow = 1;
 
 				for( int x=0 ; x<_resolution ; x++, i++ )
 				{
 					var CELL = new VisualElement();
-					var cellStyle = CELL.style;
-					cellStyle.width = pxCell;
-					cellStyle.height = pxCell;
-
+					CELL.style.flexGrow = 1;
+					
 					if( labelsExist )
 					{
 						var LABEL = new Label("00");
 						LABEL.visible = false;
-						var style = LABEL.style;
-						style.fontSize = pxCell/5;
-						style.alignSelf = Align.Stretch;
+						LABEL.StretchToParentSize();
+						LABEL.style.unityTextAlign = TextAnchor.MiddleCenter;
 						CELL.Add( LABEL );
 					}
 
@@ -137,94 +257,84 @@ namespace Tests
 			for( int i=0, y=0 ; y<_resolution ; y++ )
 			for( int x=0 ; x<_resolution ; x++, i++ )
 			{
-				float fx = (float)x * frac * 4f + _offset;
-				float fy = (float)y * frac * 4f + _offset;
+				float fx = (float)x * frac * 4f + _offset.x;
+				float fy = (float)y * frac * 4f + _offset.y;
 				float noise1 = Mathf.PerlinNoise( fx , fy );
 				float noise2 = math.pow( Mathf.PerlinNoise(fx*2.3f,fy*2.3f) , 3f );
 				float noise3 = math.pow( Mathf.PerlinNoise(fx*14f,fy*14f) , 6f ) * (1f-noise1) * (1f-noise2);
 				float noiseSum = math.pow( noise1 + noise2*0.3f + noise3*0.08f , 3.6f );
-				_grid[i].style.backgroundColor = new Color{ r=noiseSum , g=noiseSum , b=noiseSum , a=1f };
+				float smoothstep = math.smoothstep( _smoothstep.x , _smoothstep.y , noiseSum );
+				_grid[i].style.backgroundColor = new Color{ r=smoothstep , g=smoothstep , b=smoothstep , a=1f };
 			}
 		}
 
 		void SolvePath ()
 		{
-			//prepare data:
-			NativeArray<float> moveCost;
+			// prepare data:
+			NativeArray<byte> moveCost;
 			{
 				int len = _resolution*_resolution;
-				moveCost = new NativeArray<float>( len , Allocator.TempJob , NativeArrayOptions.UninitializedMemory );
-				float[] arr = new float[len];//NativeArray enumeration is slow outside Burst
+				moveCost = new NativeArray<byte>( len , Allocator.TempJob , NativeArrayOptions.UninitializedMemory );
+				byte[] arr = new byte[len];// NativeArray enumeration is slow outside Burst
 				for( int i=len-1 ; i!=-1 ; i-- )
-				{
-					arr[i] = _grid[i].style.backgroundColor.value.r;
-				}
+					arr[i] = (byte)( _grid[i].style.backgroundColor.value.r * 255 );
 				moveCost.CopyFrom( arr );
 			}
 
-			//calculate:
+			// calculate:
 			NativeList<int2> path;
-			float[] debug_F;
+			half[] fData;
+			half[] gData;
+			int2[] solution;
 			int2[] visited;
 			{
 				path = new NativeList<int2>( _resolution , Allocator.TempJob );
-
-				#if DEBUG
+				
+				// run job:
 				var watch = System.Diagnostics.Stopwatch.StartNew();
-				#endif
-
-				//run job:
 				var job = new NativeGrid.AStarJob(
-					(int2)( _p1 * _resolution ) , (int2)( _p2 * _resolution ) ,
-					moveCost , _resolution ,
-					heuristic_cost ,
-					heuristic_search ,
-					path
+					start: 					_startI2 ,
+					destination:			_destI2 ,
+					moveCost:				moveCost ,
+					moveCostWidth:			_resolution ,
+					results:				path ,
+					hMultiplier:			_hMultiplier ,
+					moveCostSensitivity:	_moveCostSensitivity ,
+					stepBudget:				_stepBudget
 				);
 				job.Run();
-
-				#if DEBUG
 				watch.Stop();
-				Debug.Log($"{nameof(NativeGrid.AStarJob)} took {watch.ElapsedMilliseconds} ms");
-				#endif
+				bool success = job.Results.Length!=0;
+				Debug.Log($"{nameof(NativeGrid.AStarJob)} took {(double)watch.ElapsedTicks/(double)System.TimeSpan.TicksPerMillisecond:G8} ms {(success?$"and succeeded in finding a path of {job.Results.Length} steps":"but <b>no path was found</b>")}.");
 
 				// copy debug data:
-				debug_F = job._F_.ToArray();
-				using( var arr = job.visited.GetKeyArray( Allocator.Temp ) ) visited = arr.ToArray();
+				fData = job.FData.ToArray();
+				gData = job.GData.ToArray();
+				solution = job.Solution.ToArray();
+				using( var nativeArray = job.Visited.ToNativeArray(Allocator.Temp) ) visited = nativeArray.ToArray();
 
-				//dispose unmanaged arrays:
+				// dispose unmanaged arrays:
 				job.Dispose();
 			}
 
-			//visualize:
-			foreach( var i2 in path )
+			// visualize:
 			{
-				int i = NativeGrid.Index2dTo1d( i2 , _resolution );
-				var CELL = _grid[i];
-				
-				var cellStyle = CELL.style;
-				Color col = cellStyle.backgroundColor.value;
+				// start cell
+				int startI = NativeGrid.Index2dTo1d( _startI2 , _resolution );
+				var cellStyle = _grid[startI].style;
+				Color col = cellStyle.backgroundColor.value * 0.75f;
 				col.r = 1f;
 				cellStyle.backgroundColor = col;
 			}
-			if( labelsExist )
-			for( int i=debug_F.Length-1 ; i!=-1 ; i-- )
+			foreach( var i2 in path )// path
 			{
-				var CELL = _grid[i];
-				Label LABEL = CELL[0] as Label;
-
-				var f = debug_F[i];
-				if( f!=float.MaxValue )
-				{
-					LABEL.text = $"f:{f:0.000}";
-					LABEL.visible = true;
-				}
-				else
-				{
-					LABEL.visible = false;
-				}
+				int i = NativeGrid.Index2dTo1d( i2 , _resolution );
+				var cellStyle = _grid[i].style;
+				Color col = cellStyle.backgroundColor.value * 0.75f;
+				col.r = 1f;
+				cellStyle.backgroundColor = col;
 			}
-			foreach( var i2 in visited )
+			foreach( var i2 in visited )// visited
 			{
 				int i = NativeGrid.Index2dTo1d( i2 , _resolution );
 				var CELL = _grid[i];
@@ -234,8 +344,26 @@ namespace Tests
 				col.b = 1f;
 				cellStyle.backgroundColor = col;
 			}
+			if( labelsExist )
+			for( int i=fData.Length-1 ; i!=-1 ; i-- )// labels
+			{
+				var CELL = _grid[i];
+				int2 i2 = NativeGrid.Index1dTo2d( i , _resolution );
+				Label LABEL = CELL[0] as Label;
 
-			//dispose data:
+				var f = fData[i];
+				var g = gData[i];
+				var h = NativeGrid.EuclideanHeuristic( i2 , _destI2 );
+				int2 origin = solution[i];
+				if( f!=float.MaxValue )
+				{
+					LABEL.text = $"<b>[{i2.x},{i2.y}]</b>\n<b>F</b>:{f:G8}\n<b>G</b>:{g:G8}\n<b>H</b>:{h:G8}\nstep-1: [{origin.x},{origin.y}]";
+					LABEL.visible = true;
+				}
+				else LABEL.visible = false;
+			}
+
+			// dispose data:
 			moveCost.Dispose();
 			path.Dispose();
 		}
