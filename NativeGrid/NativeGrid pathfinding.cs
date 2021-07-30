@@ -34,7 +34,7 @@ public abstract partial class NativeGrid
 		[ReadOnly] readonly NativeArray<byte> MoveCost;
 		readonly int MoveCostWidth;
 		readonly float HMultiplier;
-		readonly float GMultiplier;
+		readonly float MoveCostSensitivity;
 
 		public NativeArray<half> GData;
 		public NativeArray<half> FData;
@@ -42,14 +42,17 @@ public abstract partial class NativeGrid
 		NativeMinHeap<int2,AStarJobComparer> Frontier;
 		public NativeHashSet<int2> Visited;
 		NativeList<int2> Neighbours;
-		public int StepLimit;
+		public int StepBudget;
 
 		/// <summary> Traces path using some kind of A* algorithm </summary>
 		/// <param name="start"> Start index 2d </param>
 		/// <param name="destination"> Destination index 2d </param>
-		/// <param name="moveCost"> Move cost data 2d array </param>
+		/// <param name="moveCost"> Move cost data 2d array in 0.0-1.0 range format. Cells with value >= 1.0 are considered impassable. </param>
 		/// <param name="moveCostWidth"> 2d array's width </param>
 		/// <param name="results"> Resulting path goes here </param>
+		/// <param name="hMultiplier"> Heuristic factor multiplier. Increasing this over 1.0 makes lines more straight and decrease cpu usage. </param>
+		/// <param name="moveCostSensitivity"> Makes algorith evade cells with move cost > 0 more.</param>
+		/// <param name="stepBudget"> CPU time budget you give this job. Expressind in number steps search algorihm is allowed to take.</param>
 		public unsafe AStarJob
 		(
 			INT2 start ,
@@ -58,8 +61,8 @@ public abstract partial class NativeGrid
 			int moveCostWidth ,
 			NativeList<int2> results ,
 			float hMultiplier = 1 ,
-			float gMultiplier = 1 ,
-			int step_limit = int.MaxValue
+			float moveCostSensitivity = 1 ,
+			int stepBudget = int.MaxValue
 		)
 		{
 			this.Start = start;
@@ -68,8 +71,8 @@ public abstract partial class NativeGrid
 			this.MoveCostWidth = moveCostWidth;
 			this.Results = results;
 			this.HMultiplier = hMultiplier;
-			this.GMultiplier = gMultiplier;
-			this.StepLimit = step_limit;
+			this.MoveCostSensitivity = moveCostSensitivity;
+			this.StepBudget = stepBudget;
 
 			int length = moveCost.Length;
 			int start1d = Index2dTo1d( start , moveCostWidth );
@@ -108,7 +111,7 @@ public abstract partial class NativeGrid
 			while(
 					Frontier.Length!=0
 				&&	!( destinationReached = math.all(node==Destination) )
-				&&	step<StepLimit
+				&&	step<StepBudget
 			)
 			{
 				node = Frontier.Pop();// we grab candidate with lowest F
@@ -128,13 +131,15 @@ public abstract partial class NativeGrid
 					int2 neighbour = Neighbours[i];
 					int neighbour1d = Index2dTo1d( neighbour , MoveCostWidth );
 					bool orthogonal = math.any(node==neighbour);
-					float movecost = ( MoveCost[neighbour1d] / 255f );
+					float movecost = MoveCost[neighbour1d] / 255f;
 					if( movecost<1f )
 					{
+						movecost *= MoveCostSensitivity;
+
 						// g - dist from start node
 						// h - dist from dest node as predicted by heuristic func
 
-						float g = node_g + ( 1f + movecost ) * ( orthogonal ? 1f : 1.41421356237f ) * GMultiplier;
+						float g = node_g + ( 1f + movecost ) * ( orthogonal ? 1f : 1.41421356237f );
 						float h = EuclideanHeuristic( neighbour , Destination ) * HMultiplier;
 						float f = g + h;
 						
@@ -162,16 +167,19 @@ public abstract partial class NativeGrid
 
 				step++;
 			}
-			Debug.Log($"A* job took {step} steps, {(destinationReached?"path resolved":"<b>no path found</b>")}.");
 
 			// create path:
 			if( destinationReached )
 			{
+				// Debug.Log($"A* job took {step} steps, path resolved.");
+
 				bool backtrackSuccess = BacktrackToPath( Solution , MoveCostWidth , Destination , Results );
 				Assert.IsTrue( backtrackSuccess );
 			}
 			else
 			{
+				// Debug.Log($"A* job took {step} steps, <b>no path found</b>.");
+				
 				Results.Clear();// make sure to communite there is no path
 			}
 		}

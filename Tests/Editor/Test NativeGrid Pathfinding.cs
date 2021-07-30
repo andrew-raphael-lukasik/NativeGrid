@@ -19,10 +19,10 @@ namespace Tests
 		int2 _startI2 => (int2)( _start01 * (_resolution-1) );
 		float2 _dest01 = new float2{ x=0.9f , y=0.9f };
 		int2 _destI2 => (int2)( _dest01 * (_resolution-1) );
-		float2 _smoothstep = new float2{ x=0.1f , y=0.3f };// perlin noise post process
-		float _hMultiplier = 1;
-		float _gMultiplier = 1;
-		int _steplimit = int.MaxValue;
+		float2 _smoothstep = new float2{ x=0f , y=0.8f };// perlin noise post process
+		float _hMultiplier = 1.5f;
+		float _moveCostSensitivity = 10f;
+		int _stepBudget = int.MaxValue;
 
 		const int _drawTextMaxResolution = 50;
 		bool labelsExist => _resolution<=_drawTextMaxResolution;
@@ -68,7 +68,7 @@ namespace Tests
 			} );
 			TOOLBAR_COLUMN_0.Add( RESOLUTION );
 
-			var HEURISTIC_COST = new FloatField( $"H Multiplier" );
+			var HEURISTIC_COST = new FloatField( $"H Multiplier:" );
 			HEURISTIC_COST.style.paddingLeft = HEURISTIC_COST.style.paddingRight = 10;
 			HEURISTIC_COST.value = _hMultiplier;
 			HEURISTIC_COST.RegisterValueChangedCallback( (e)=> {
@@ -79,18 +79,18 @@ namespace Tests
 			} );
 			TOOLBAR_COLUMN_0.Add( HEURISTIC_COST );
 
-			var HEURISTIC_SEARCH = new FloatField( $"G Multiplier:" );
+			var HEURISTIC_SEARCH = new FloatField( $"Move Cost Multiplier:" );
 			HEURISTIC_SEARCH.style.paddingLeft = HEURISTIC_SEARCH.style.paddingRight = 10;
-			HEURISTIC_SEARCH.value = _gMultiplier;
+			HEURISTIC_SEARCH.value = _moveCostSensitivity;
 			HEURISTIC_SEARCH.RegisterValueChangedCallback( (e)=> {
-				_gMultiplier = e.newValue;
+				_moveCostSensitivity = e.newValue;
 				NewRandomMap();
 				SolvePath();
 				Repaint();
 			} );
 			TOOLBAR_COLUMN_0.Add( HEURISTIC_SEARCH );
 
-			var SMOOTHSTEP = new MinMaxSlider( "Levels" , _smoothstep.x , _smoothstep.y , 0 , 1 );
+			var SMOOTHSTEP = new MinMaxSlider( "Move Cost Range:" , _smoothstep.x , _smoothstep.y , 0 , 1 );
 			{
 				var style = SMOOTHSTEP.style;
 				style.marginBottom = style.marginLeft = style.marginRight = style.marginTop = 2;
@@ -163,17 +163,17 @@ namespace Tests
 			}
 			TOOLBAR_COLUMN_1.Add( START_DEST_LINE );
 
-			var STEPLIMIT = new IntegerField("Step Limit");
+			var STEPLIMIT = new IntegerField("Step Budget:");
 			{
-				STEPLIMIT.value = _steplimit;
+				STEPLIMIT.value = _stepBudget;
 				STEPLIMIT.RegisterValueChangedCallback( (ctx) => {
 					if( ctx.newValue>=0 )
 					{
-						_steplimit = ctx.newValue;
+						_stepBudget = ctx.newValue;
 					}
 					else
 					{
-						_steplimit = 0;
+						_stepBudget = 0;
 						STEPLIMIT.SetValueWithoutNotify( 0 );
 					}
 					NewRandomMap();
@@ -183,8 +183,8 @@ namespace Tests
 				STEPLIMIT.RegisterCallback( (WheelEvent e) => {
 					Vector2 mouseScrollDelta = e.mouseDelta;
 					int scrollDir = (int) Mathf.Sign(mouseScrollDelta.y);
-					_steplimit = Mathf.Max( _steplimit - scrollDir , 0 );
-					STEPLIMIT.SetValueWithoutNotify( _steplimit );
+					_stepBudget = Mathf.Max( _stepBudget - scrollDir , 0 );
+					STEPLIMIT.SetValueWithoutNotify( _stepBudget );
 					NewRandomMap();
 					SolvePath();
 					Repaint();
@@ -293,14 +293,14 @@ namespace Tests
 				// run job:
 				var watch = System.Diagnostics.Stopwatch.StartNew();
 				var job = new NativeGrid.AStarJob(
-					start: 								_startI2 ,
-					destination:						_destI2 ,
-					moveCost:							moveCost ,
-					moveCostWidth:						_resolution ,
-					results:							path ,
-					hMultiplier:						_hMultiplier ,
-					gMultiplier:						_gMultiplier ,
-					step_limit:							_steplimit
+					start: 					_startI2 ,
+					destination:			_destI2 ,
+					moveCost:				moveCost ,
+					moveCostWidth:			_resolution ,
+					results:				path ,
+					hMultiplier:			_hMultiplier ,
+					moveCostSensitivity:	_moveCostSensitivity ,
+					stepBudget:				_stepBudget
 				);
 				job.Run();
 				watch.Stop();
