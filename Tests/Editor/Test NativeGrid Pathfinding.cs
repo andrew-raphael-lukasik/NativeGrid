@@ -16,9 +16,9 @@ namespace Tests
 		int _resolution = 128;
 		float2 _offset = 0f;// perlin noise pos offset
 		float2 _start01 = new float2{ x=0.1f , y=0.1f };
+		int2 startI2 => (int2)( _start01 * (_resolution-1) );
 		float2 _dest01 = new float2{ x=0.9f , y=0.9f };
-		float heuristic_cost = 0.001f;
-		float heuristic_search = 20f;
+		int2 destI2 => (int2)( _dest01 * (_resolution-1) );
 		float2 _smoothstep = new float2{ x=0.1f , y=0.3f };// perlin noise post process
 		int _steplimit = int.MaxValue;
 
@@ -30,8 +30,27 @@ namespace Tests
 			var ROOT = rootVisualElement;
 			var GRID = new VisualElement();
 			var TOOLBAR = new VisualElement();
+			var TOOLBAR_COLUMN_0 = new VisualElement();
+			var TOOLBAR_COLUMN_1 = new VisualElement();
 			ROOT.Add( TOOLBAR );
+			TOOLBAR.Add( TOOLBAR_COLUMN_0 );
+			TOOLBAR.Add( TOOLBAR_COLUMN_1 );
 			ROOT.Add( GRID );
+
+			{
+				var style = TOOLBAR.style;
+				style.flexDirection = FlexDirection.Row;
+			}
+			{
+				var style = TOOLBAR_COLUMN_0.style;
+				style.width = new Length( 50f , LengthUnit.Percent );
+				style.flexDirection = FlexDirection.Column;
+			}
+			{
+				var style = TOOLBAR_COLUMN_1.style;
+				style.width = new Length( 50f , LengthUnit.Percent );
+				style.flexDirection = FlexDirection.Column;
+			}
 
 			var RESOLUTION = new IntegerField( "Resolution:" );
 			RESOLUTION.style.paddingLeft = RESOLUTION.style.paddingRight = 10;
@@ -45,29 +64,29 @@ namespace Tests
 				SolvePath();
 				Repaint();
 			} );
-			TOOLBAR.Add( RESOLUTION );
+			TOOLBAR_COLUMN_0.Add( RESOLUTION );
 
-			var HEURISTIC_COST = new FloatField( $"Cost Heuristic:" );
-			HEURISTIC_COST.style.paddingLeft = HEURISTIC_COST.style.paddingRight = 10;
-			HEURISTIC_COST.value = heuristic_cost;
-			HEURISTIC_COST.RegisterValueChangedCallback( (e)=> {
-				heuristic_cost = e.newValue;
-				NewRandomMap();
-				SolvePath();
-				Repaint();
-			} );
-			TOOLBAR.Add( HEURISTIC_COST );
+			// var HEURISTIC_COST = new FloatField( $"Euclidean heuristic x:" );
+			// HEURISTIC_COST.style.paddingLeft = HEURISTIC_COST.style.paddingRight = 10;
+			// HEURISTIC_COST.value = euclidean_heuristic_multiplier;
+			// HEURISTIC_COST.RegisterValueChangedCallback( (e)=> {
+			// 	euclidean_heuristic_multiplier = e.newValue;
+			// 	NewRandomMap();
+			// 	SolvePath();
+			// 	Repaint();
+			// } );
+			// TOOLBAR_COLUMN_0.Add( HEURISTIC_COST );
 
-			var HEURISTIC_SEARCH = new FloatField( $"Search Heuristic:" );
-			HEURISTIC_SEARCH.style.paddingLeft = HEURISTIC_SEARCH.style.paddingRight = 10;
-			HEURISTIC_SEARCH.value = heuristic_search;
-			HEURISTIC_SEARCH.RegisterValueChangedCallback( (e)=> {
-				heuristic_search = e.newValue;
-				NewRandomMap();
-				SolvePath();
-				Repaint();
-			} );
-			TOOLBAR.Add( HEURISTIC_SEARCH );
+			// var HEURISTIC_SEARCH = new FloatField( $"Search Heuristic:" );
+			// HEURISTIC_SEARCH.style.paddingLeft = HEURISTIC_SEARCH.style.paddingRight = 10;
+			// HEURISTIC_SEARCH.value = heuristic_search;
+			// HEURISTIC_SEARCH.RegisterValueChangedCallback( (e)=> {
+			// 	heuristic_search = e.newValue;
+			// 	NewRandomMap();
+			// 	SolvePath();
+			// 	Repaint();
+			// } );
+			// TOOLBAR_COLUMN_0.Add( HEURISTIC_SEARCH );
 
 			var SMOOTHSTEP = new MinMaxSlider( "Levels" , _smoothstep.x , _smoothstep.y , 0 , 1 );
 			{
@@ -80,7 +99,67 @@ namespace Tests
 				SolvePath();
 				Repaint();
 			} );
-			TOOLBAR.Add( SMOOTHSTEP );
+			TOOLBAR_COLUMN_1.Add( SMOOTHSTEP );
+
+			var START_DEST_LINE = new VisualElement();
+			{
+				// START_DEST_LINE.style.flexGrow = 1;
+				START_DEST_LINE.style.flexDirection = FlexDirection.Row;
+
+				var SPACE = new VisualElement();
+				SPACE.style.flexGrow = 1;
+
+				var START = new Label("Start:");
+				var START_X = new Slider( 0 , 1 );
+				var START_Y = new Slider( 0 , 1 );
+				START_X.value = _start01.x;
+				START_Y.value = _start01.y;
+				START_X.style.flexGrow = 1;
+				START_Y.style.flexGrow = 1;
+				START_X.RegisterValueChangedCallback( (ctx) => {
+					_start01.x = ctx.newValue;
+					NewRandomMap();
+					SolvePath();
+					Repaint();
+				} );
+				START_Y.RegisterValueChangedCallback( (ctx) => {
+					_start01.y = ctx.newValue;
+					NewRandomMap();
+					SolvePath();
+					Repaint();
+				} );
+				START_DEST_LINE.Add( START );
+				START_DEST_LINE.Add( SPACE );
+				START_DEST_LINE.Add( START_X );
+				START_DEST_LINE.Add( START_Y );
+				START_DEST_LINE.Add( SPACE );
+
+				var END = new Label("End:");
+				var END_X = new Slider( 0 , 1 );
+				var END_Y = new Slider( 0 , 1 );
+				END_X.value = _dest01.x;
+				END_Y.value = _dest01.y;
+				END_X.style.flexGrow = 1;
+				END_Y.style.flexGrow = 1;
+				END_X.RegisterValueChangedCallback( (ctx) => {
+					_dest01.x = ctx.newValue;
+					NewRandomMap();
+					SolvePath();
+					Repaint();
+				} );
+				END_Y.RegisterValueChangedCallback( (ctx) => {
+					_dest01.y = ctx.newValue;
+					NewRandomMap();
+					SolvePath();
+					Repaint();
+				} );
+				START_DEST_LINE.Add( END );
+				START_DEST_LINE.Add( SPACE );
+				START_DEST_LINE.Add( END_X );
+				START_DEST_LINE.Add( END_Y );
+				START_DEST_LINE.Add( SPACE );
+			}
+			TOOLBAR_COLUMN_0.Add( START_DEST_LINE );
 
 			var STEPLIMIT = new IntegerField("Step Limit");
 			{
@@ -100,11 +179,12 @@ namespace Tests
 					Repaint();
 				} );
 			}
-			TOOLBAR.Add( STEPLIMIT );
+			TOOLBAR_COLUMN_1.Add( STEPLIMIT );
 
 			{
 				var gridStyle = GRID.style;
 				gridStyle.flexGrow = 1;
+				gridStyle.flexDirection = FlexDirection.ColumnReverse;
 				gridStyle.marginBottom = gridStyle.marginLeft = gridStyle.marginRight = gridStyle.marginTop = 2;
 				gridStyle.backgroundColor = new Color{ a = 0.02f };
 			}
@@ -135,13 +215,14 @@ namespace Tests
 			{
 				var ROW = new VisualElement();
 				var rowStyle = ROW.style;
-				rowStyle.flexDirection = FlexDirection.RowReverse;
+				rowStyle.flexDirection = FlexDirection.Row;
 				rowStyle.flexGrow = 1;
 
 				for( int x=0 ; x<_resolution ; x++, i++ )
 				{
 					var CELL = new VisualElement();
 					CELL.style.flexGrow = 1;
+					
 					if( labelsExist )
 					{
 						var LABEL = new Label("00");
@@ -191,7 +272,9 @@ namespace Tests
 
 			// calculate:
 			NativeList<int2> path;
-			float[] debug_F;
+			half[] fData;
+			half[] gData;
+			int2[] solution;
 			int2[] visited;
 			{
 				path = new NativeList<int2>( _resolution , Allocator.TempJob );
@@ -199,14 +282,12 @@ namespace Tests
 				// run job:
 				var watch = System.Diagnostics.Stopwatch.StartNew();
 				var job = new NativeGrid.AStarJob(
-					start: 				(int2)( _start01 * _resolution ) ,
-					destination:		(int2)( _dest01 * _resolution ) ,
-					moveCost:			moveCost ,
-					moveCost_width:		_resolution ,
-					heuristic_cost:		heuristic_cost ,
-					heuristic_search:	heuristic_search ,
-					output_path:		path ,
-					step_limit:			_steplimit
+					start: 								startI2 ,
+					destination:						destI2 ,
+					moveCost:							moveCost ,
+					moveCostWidth:						_resolution ,
+					results:							path ,
+					step_limit:							_steplimit
 				);
 				job.Run();
 				watch.Stop();
@@ -214,42 +295,33 @@ namespace Tests
 				Debug.Log($"{nameof(NativeGrid.AStarJob)} took {(double)watch.ElapsedTicks/(double)System.TimeSpan.TicksPerMillisecond:G8} ms {(success?$"and succeeded in finding a path of {job.Results.Length} steps":"but no path was found")}.");
 
 				// copy debug data:
-				debug_F = job._F_.ToArray();
-				using( var arr = job.visited.GetKeyArray( Allocator.Temp ) ) visited = arr.ToArray();
+				fData = job.FData.ToArray();
+				gData = job.GData.ToArray();
+				solution = job.Solution.ToArray();
+				using( var nativeArray = job.Visited.ToNativeArray(Allocator.Temp) ) visited = nativeArray.ToArray();
 
 				// dispose unmanaged arrays:
 				job.Dispose();
 			}
 
-			foreach( var i2 in path )
 			// visualize:
 			{
-				int i = NativeGrid.Index2dTo1d( i2 , _resolution );
-				var CELL = _grid[i];
-				
-				var cellStyle = CELL.style;
-				Color col = cellStyle.backgroundColor.value;
+				// start cell
+				int startI = NativeGrid.Index2dTo1d( startI2 , _resolution );
+				var cellStyle = _grid[startI].style;
+				Color col = cellStyle.backgroundColor.value * 0.75f;
 				col.r = 1f;
 				cellStyle.backgroundColor = col;
 			}
-			if( labelsExist )
-			for( int i=debug_F.Length-1 ; i!=-1 ; i-- )
+			foreach( var i2 in path )// path
 			{
-				var CELL = _grid[i];
-				Label LABEL = CELL[0] as Label;
-
-				var f = debug_F[i];
-				if( f!=float.MaxValue )
-				{
-					LABEL.text = $"f:{f:0.000}";
-					LABEL.visible = true;
-				}
-				else
-				{
-					LABEL.visible = false;
-				}
+				int i = NativeGrid.Index2dTo1d( i2 , _resolution );
+				var cellStyle = _grid[i].style;
+				Color col = cellStyle.backgroundColor.value * 0.75f;
+				col.r = 1f;
+				cellStyle.backgroundColor = col;
 			}
-			foreach( var i2 in visited )
+			foreach( var i2 in visited )// visited
 			{
 				int i = NativeGrid.Index2dTo1d( i2 , _resolution );
 				var CELL = _grid[i];
@@ -258,6 +330,24 @@ namespace Tests
 				Color col = cellStyle.backgroundColor.value;
 				col.b = 1f;
 				cellStyle.backgroundColor = col;
+			}
+			if( labelsExist )
+			for( int i=fData.Length-1 ; i!=-1 ; i-- )// labels
+			{
+				var CELL = _grid[i];
+				int2 i2 = NativeGrid.Index1dTo2d( i , _resolution );
+				Label LABEL = CELL[0] as Label;
+
+				var f = fData[i];
+				var g = gData[i];
+				var h = NativeGrid.EuclideanHeuristic( i2 , destI2 );
+				int2 origin = solution[i];
+				if( f!=float.MaxValue )
+				{
+					LABEL.text = $"<b>[{i2.x},{i2.y}]</b>\n<b>F</b>:{f:G8}\n<b>G</b>:{g:G8}\n<b>H</b>:{h:G8}\nstep-1: [{origin.x},{origin.y}]";
+					LABEL.visible = true;
+				}
+				else LABEL.visible = false;
 			}
 
 			// dispose data:

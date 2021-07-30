@@ -20,7 +20,7 @@ public abstract partial class NativeGrid
 	#region PUBLIC METHODS
 
 
-	/// <summary> Traces path using some kind of A* algorithm </summary>
+	/// <summary> Traces path using A* algorithm </summary>
 	/// Format weights to 0.0 to 1.0 range. Heuristic can cease to work otherwise.
 	[Unity.Burst.BurstCompile]
 	public struct AStarJob : IJob, System.IDisposable
@@ -29,148 +29,153 @@ public abstract partial class NativeGrid
 		/// <summary> Job results goes here. List of indices to form a path. </summary>
 		public NativeList<int2> Results;
 
-		readonly int2 start;
-		readonly int2 destination;
-		[ReadOnly] readonly NativeArray<byte> moveCost;
-		readonly int moveCost_width;
-		readonly float heuristic_cost;
-		readonly float heuristic_search;
+		readonly int2 Start;
+		readonly int2 Destination;
+		[ReadOnly] readonly NativeArray<byte> MoveCost;
+		readonly int MoveCostWidth;
 
-		public NativeArray<float> _F_;
-		public NativeArray<int2> solution;
-		NativeMinHeap<int2,AStarJobComparer> frontier;
-		public NativeHashMap<int2,byte> visited;
-		NativeList<int2> neighbours;
-		public int _step_limit;
+		public NativeArray<half> GData;
+		public NativeArray<half> FData;
+		public NativeArray<int2> Solution;
+		NativeMinHeap<int2,AStarJobComparer> Frontier;
+		public NativeHashSet<int2> Visited;
+		NativeList<int2> Neighbours;
+		public int StepLimit;
 
 		/// <summary> Traces path using some kind of A* algorithm </summary>
 		/// <param name="start"> Start index 2d </param>
 		/// <param name="destination"> Destination index 2d </param>
 		/// <param name="moveCost"> Move cost data 2d array </param>
-		/// <param name="moveCost_width"> 2d array's width </param>
-		/// <param name="heuristic_cost"> Cost heuristic multiplier. Figure out yourself what value works best for your specific moveCost data </param>
-		/// <param name="heuristic_search"> Search heuristic multiplier. Figure out yourself what value works best for your specific moveCost data </param>
-		/// <param name="output_path"> Resulting path goes here </param>
+		/// <param name="moveCostWidth"> 2d array's width </param>
+		/// <param name="results"> Resulting path goes here </param>
 		public unsafe AStarJob
 		(
 			INT2 start ,
 			INT2 destination ,
 			NativeArray<byte> moveCost ,
-			int moveCost_width ,
-			float heuristic_cost ,
-			float heuristic_search ,
-			NativeList<int2> output_path ,
+			int moveCostWidth ,
+			NativeList<int2> results ,
 			int step_limit = int.MaxValue
 		)
 		{
-			this.start = start;
-			this.destination = destination;
-			this.moveCost = moveCost;
-			this.moveCost_width = moveCost_width;
-			this.Results = output_path;
-			this.heuristic_cost = heuristic_cost;
-			this.heuristic_search = heuristic_search;
+			this.Start = start;
+			this.Destination = destination;
+			this.MoveCost = moveCost;
+			this.MoveCostWidth = moveCostWidth;
+			this.Results = results;
 
 			int length = moveCost.Length;
-			int start1d = Index2dTo1d( start , moveCost_width );
-			this._F_ = new NativeArray<float>( length , Allocator.TempJob , NativeArrayOptions.UninitializedMemory );
-			this.solution = new NativeArray<int2>( length , Allocator.TempJob );
-			this.frontier = new NativeMinHeap<int2,AStarJobComparer>(
-				new AStarJobComparer( _F_ , moveCost_width , destination , heuristic_search ) ,
+			int start1d = Index2dTo1d( start , moveCostWidth );
+			this.GData = new NativeArray<half>( length , Allocator.TempJob , NativeArrayOptions.UninitializedMemory );
+			this.FData = new NativeArray<half>( length , Allocator.TempJob , NativeArrayOptions.UninitializedMemory );
+			this.Solution = new NativeArray<int2>( length , Allocator.TempJob );
+			this.Frontier = new NativeMinHeap<int2,AStarJobComparer>(
+				new AStarJobComparer( FData , moveCostWidth ) ,
 				Allocator.TempJob , length
 			);
-			this.visited = new NativeHashMap<int2,byte>( length , Allocator.TempJob );//TODO: use actual hashSet once available
-			this.neighbours = new NativeList<int2>( 8 , Allocator.TempJob );
-			this._step_limit = step_limit;
+			this.Visited = new NativeHashSet<int2>( length , Allocator.TempJob );
+			this.Neighbours = new NativeList<int2>( 8 , Allocator.TempJob );
+			this.StepLimit = step_limit;
 		}
 		public void Execute ()
 		{
-			int length = moveCost.Length;
-			int start1d = Index2dTo1d( start , moveCost_width );
+			int length = MoveCost.Length;
+			int start1d = Index2dTo1d( Start , MoveCostWidth );
 			{
-				for( int i=_F_.Length-1 ; i!=-1 ; i-- )
-					_F_[i] = float.MaxValue;
-				_F_[start1d] = 0;
+				for( int i=GData.Length-1 ; i!=-1 ; i-- )
+					GData[i] = (half) half.MaxValue;
+				GData[start1d] = half.zero;
 			}
-			solution[start1d] = start;
-			frontier.Push( start );
-			visited.TryAdd( start , 0 );
-			
-			//solve;
-			float euclideanMaxLength = EuclideanHeuristicMaxLength( length , moveCost_width );
-			int2 node = int2.zero-1;
-			int step = 0;
-			while( frontier.Count!=0 && math.any(node!=destination) && step++<_step_limit )
 			{
-				node = frontier.Pop();//we grab candidate with lowest F so far
-				int node1d = Index2dTo1d( node , moveCost_width );
-				float node_f = _F_[node1d];
+				for( int i=FData.Length-1 ; i!=-1 ; i-- )
+					FData[i] = (half) half.MaxValue;
+				FData[start1d] = half.zero;
+			}
+			Solution[start1d] = Start;
+			Frontier.Push( Start );
+			Visited.Add( Start );
+			
+			// solve
+			int2 node = -1;
+			int step = 0;
+			while( Frontier.Length!=0 && !math.all(node==Destination) && step<StepLimit )
+			{
+				node = Frontier.Pop();// we grab candidate with lowest F
+				int node1d = Index2dTo1d( node , MoveCostWidth );
+				float node_g = GData[node1d];
 
-				//lets check all its neighbours:
-				EnumerateNeighbours( neighbours , moveCost_width , moveCost_width , node );
-				int neighboursLength = neighbours.Length;
+				// lets check all its neighbours:
+				EnumerateNeighbours( Neighbours , MoveCostWidth , MoveCostWidth , node );
+				int neighboursLength = Neighbours.Length;
 				for( int i=0 ; i<neighboursLength ; i++ )
 				{
-					int2 neighbour = neighbours[i];
-					int neighbour1d = Index2dTo1d( neighbour , moveCost_width );
-					
-					bool isOrthogonal = math.any( node==neighbour );//is relative position orthogonal or diagonal
+					int2 neighbour = Neighbours[i];
+					int neighbour1d = Index2dTo1d( neighbour , MoveCostWidth );
+					bool orthogonal = math.any(node==neighbour);
+					float movecost = 0;//(MoveCost[neighbour1d]/255f);
 
-					float g = node_f + (moveCost[neighbour1d]/255f) * ( isOrthogonal ? 1f : 1.41421356237f );
-					float h = EuclideanHeuristicNormalized( neighbour , destination , euclideanMaxLength )*heuristic_cost;
+					// g - dist from start node
+					// h - dist from dest node as predicted by heuristic func
+
+					float g = node_g + ( 1f + movecost ) * ( orthogonal ? 1f : 1.41421356237f );
+					float h = EuclideanHeuristic( neighbour , Destination );
 					float f = g + h;
 					
-					//update F when this connection is less costly:
-					if( f<_F_[neighbour1d] )
+					// update G:
+					if( g<GData[neighbour1d] )
 					{
-						_F_[neighbour1d] = f;
-						solution[neighbour1d] = node;
+						GData[neighbour1d] = (half) g;
 					}
 
-					//update frontier:
-					if( visited.TryAdd(neighbour,0) )
-						frontier.Push(neighbour);
-				}
-			}
+					// update F:
+					if( f<FData[neighbour1d] )
+					{
+						FData[neighbour1d] = (half) f;
+						Solution[neighbour1d] = node;
+					}
 
-			//create path:
-			BacktrackToPath( solution , moveCost_width , destination , Results );
+					// update frontier:
+					if( !Visited.Contains(neighbour) )
+					{
+						Visited.Add(neighbour);
+						Frontier.Push(neighbour);
+					}
+				}
+
+				step++;
+			}
+			// Debug.Log($"A* job took {step} steps");
+
+			// create path:
+			bool success = BacktrackToPath( Solution , MoveCostWidth , Destination , Results );
 		}
+		public static float G ( float g , float movecost , bool orthogonal ) => g + ( 1f + movecost ) * ( orthogonal ? 1f : 1.41421356237f );
 		public void Dispose ()
 		{
-			this._F_.Dispose();
-			this.solution.Dispose();
-			this.frontier.Dispose();
-			this.visited.Dispose();
-			this.neighbours.Dispose();
+			this.GData.Dispose();
+			this.FData.Dispose();
+			this.Solution.Dispose();
+			this.Frontier.Dispose();
+			this.Visited.Dispose();
+			this.Neighbours.Dispose();
 		}
 	}
 	
 
 	public unsafe struct AStarJobComparer : IComparerInt2
 	{
-		readonly void* _F_Ptr;
+		readonly void* _ptr;
 		readonly int _width;
-		readonly int2 _dest;
-		readonly float heuristic_search;
-		public AStarJobComparer ( NativeArray<float> _G_ , int weightsWidth , INT2 destination , float heuristic_search )
+		public AStarJobComparer ( NativeArray<half> weights , int width )
 		{
-			this._F_Ptr = NativeArrayUnsafeUtility.GetUnsafeReadOnlyPtr( _G_ );
-			this._width = weightsWidth;
-			this._dest = destination;
-			this.heuristic_search = heuristic_search;
+			this._ptr = NativeArrayUnsafeUtility.GetUnsafeReadOnlyPtr( weights );
+			this._width = width;
 		}
 		int IComparerInt2.Compare ( int2 lhs , int2 rhs )
 		{
-			int lhs1d = Index2dTo1d( lhs , _width );
-			int rhs1d = Index2dTo1d( rhs , _width );
-			
-			float euclideanHeuristicMaxLength = EuclideanHeuristicMaxLength(_width*_width,_width);
-			
-			float lhs_g = UnsafeUtility.ReadArrayElement<float>( _F_Ptr , lhs1d ) + EuclideanHeuristicNormalized(lhs,_dest,euclideanHeuristicMaxLength)*heuristic_search;
-			float rhs_g = UnsafeUtility.ReadArrayElement<float>( _F_Ptr , rhs1d ) + EuclideanHeuristicNormalized(rhs,_dest,euclideanHeuristicMaxLength)*heuristic_search;
-
-			return lhs_g.CompareTo(rhs_g);
+			float lhsValue = UnsafeUtility.ReadArrayElement<half>( _ptr , Index2dTo1d(lhs,_width) );
+			float rhsValue = UnsafeUtility.ReadArrayElement<half>( _ptr , Index2dTo1d(rhs,_width) );
+			return lhsValue.CompareTo(rhsValue);
 		}
 	}
 
@@ -185,32 +190,29 @@ public abstract partial class NativeGrid
 	public static bool BacktrackToPath
 	(
 		NativeArray<int2> solution ,
-		INT solutionWidth ,
+		INT width ,
 		INT2 destination ,
-		NativeList<int2> path
+		NativeList<int2> results
 	)
 	{
-		path.Clear();
-		if( path.Capacity<solutionWidth*2 ) path.Capacity = solutionWidth*2;//preallocate for reasonably common/bad scenario
+		results.Clear();
+		if( results.Capacity<width*2 ) results.Capacity = width*2;
 		int solutionLength = solution.Length;
 
 		int2 pos = destination;
-		int pos1d = Index2dTo1d( pos , solutionWidth );
+		int pos1d = Index2dTo1d( pos , width );
 		int step = 0;
-		while(
-			math.any( pos!=solution[pos1d] )
-			&& step<solutionLength
-		)
+		while( !math.all(pos==solution[pos1d]) && step<solutionLength )
 		{
-			path.Add( pos );
+			results.Add( pos );
 			pos = solution[pos1d];
-			pos1d = Index2dTo1d( pos , solutionWidth );
+			pos1d = Index2dTo1d( pos , width );
 			step++;
 		}
 		bool wasDestinationReached = math.all( pos==solution[pos1d] );
 
 		// TODO: can this step be avoided?
-		ReverseArray<int2>( path );
+		ReverseArray<int2>( results );
 
 		return wasDestinationReached;
 	}
