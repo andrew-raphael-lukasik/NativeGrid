@@ -15,7 +15,6 @@ namespace Tests
 		VisualElement[] _grid;
 		int _resolution = 128;
 		float2 _offset = 0f;// perlin noise pos offset
-
 		float2 _start01 = new float2{ x=0.1f , y=0.1f };
 		float2 _dest01 = new float2{ x=0.9f , y=0.9f };
 		float heuristic_cost = 0.001f;
@@ -43,6 +42,7 @@ namespace Tests
 				GRID.Clear();
 				CreateGridLayout( GRID );
 				NewRandomMap();
+				SolvePath();
 				Repaint();
 			} );
 			TOOLBAR.Add( RESOLUTION );
@@ -178,7 +178,7 @@ namespace Tests
 
 		void SolvePath ()
 		{
-			//prepare data:
+			// prepare data:
 			NativeArray<byte> moveCost;
 			{
 				int len = _resolution*_resolution;
@@ -189,18 +189,15 @@ namespace Tests
 				moveCost.CopyFrom( arr );
 			}
 
-			//calculate:
+			// calculate:
 			NativeList<int2> path;
 			float[] debug_F;
 			int2[] visited;
 			{
 				path = new NativeList<int2>( _resolution , Allocator.TempJob );
-
-				#if DEBUG
+				
+				// run job:
 				var watch = System.Diagnostics.Stopwatch.StartNew();
-				#endif
-
-				//run job:
 				var job = new NativeGrid.AStarJob(
 					start: 				(int2)( _start01 * _resolution ) ,
 					destination:		(int2)( _dest01 * _resolution ) ,
@@ -212,22 +209,20 @@ namespace Tests
 					step_limit:			_steplimit
 				);
 				job.Run();
-
-				#if DEBUG
 				watch.Stop();
-				Debug.Log($"{nameof(NativeGrid.AStarJob)} took {watch.ElapsedMilliseconds} ms");
-				#endif
+				bool success = job.Results.Length!=0;
+				Debug.Log($"{nameof(NativeGrid.AStarJob)} took {(double)watch.ElapsedTicks/(double)System.TimeSpan.TicksPerMillisecond:G8} ms {(success?$"and succeeded in finding a path of {job.Results.Length} steps":"but no path was found")}.");
 
 				// copy debug data:
 				debug_F = job._F_.ToArray();
 				using( var arr = job.visited.GetKeyArray( Allocator.Temp ) ) visited = arr.ToArray();
 
-				//dispose unmanaged arrays:
+				// dispose unmanaged arrays:
 				job.Dispose();
 			}
 
-			//visualize:
 			foreach( var i2 in path )
+			// visualize:
 			{
 				int i = NativeGrid.Index2dTo1d( i2 , _resolution );
 				var CELL = _grid[i];
@@ -265,7 +260,7 @@ namespace Tests
 				cellStyle.backgroundColor = col;
 			}
 
-			//dispose data:
+			// dispose data:
 			moveCost.Dispose();
 			path.Dispose();
 		}

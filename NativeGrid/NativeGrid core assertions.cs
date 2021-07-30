@@ -1,5 +1,7 @@
 /// homepage: https://github.com/andrew-raphael-lukasik/NativeGrid
 
+using Conditional = System.Diagnostics.ConditionalAttribute;
+
 using UnityEngine;
 using UnityEngine.Assertions;
 
@@ -16,21 +18,21 @@ public abstract partial class NativeGrid
 	#region ASSERTIONS
 
 
-	[System.Diagnostics.Conditional("UNITY_ASSERTIONS")]
+	[Conditional("UNITY_ASSERTIONS")]
 	static void ASSERT_TRUE ( in bool b , in FixedString128 text )
 	{
 		if( !b ) Debug.LogError(text);
 	}
 
 
-	[System.Diagnostics.Conditional("UNITY_ASSERTIONS")]
+	[Conditional("UNITY_ASSERTIONS")]
 	static void Assert_IndexTranslate ( RectInt r , int rx , int ry , int R_width )
 	{
 		ASSERT_TRUE( R_width>0 , $"FAILED: R_width ({R_width}) > 0" );
 		ASSERT_TRUE( r.width<=R_width , $"FAILED: r.width ({r.width}) > ({R_width})  R_width" );
 		Assert_IndexTranslate( r , rx , ry );
 	}
-	[System.Diagnostics.Conditional("UNITY_ASSERTIONS")]
+	[Conditional("UNITY_ASSERTIONS")]
 	static void Assert_IndexTranslate ( RectInt r , int rx , int ry )
 	{
 		ASSERT_TRUE( rx>=0 , $"FAILED: rx ({rx}) >= 0" );
@@ -45,14 +47,14 @@ public abstract partial class NativeGrid
 		ASSERT_TRUE( ry>=0 && ry<r.height , $"FAILED: ry ({ry}) is out of bounds for r ({r})" );
 	}
 
-	[System.Diagnostics.Conditional("UNITY_ASSERTIONS")]
+	[Conditional("UNITY_ASSERTIONS")]
 	static void Assert_Index1dTo2d ( int i , int width )
 	{
 		ASSERT_TRUE( width>0 , $"FAILED: width ({width}) > 0" );
 		ASSERT_TRUE( i>=0 , $"FAILED: i ({i}) >= 0" );
 	}
 
-	[System.Diagnostics.Conditional("UNITY_ASSERTIONS")]
+	[Conditional("UNITY_ASSERTIONS")]
 	static void Assert_Index2dTo1d ( int x , int y , int width )
 	{
 		ASSERT_TRUE( width>0 , $"FAILED: width ({width}) > 0" );
