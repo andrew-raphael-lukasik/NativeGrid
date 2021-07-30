@@ -178,6 +178,15 @@ namespace Tests
 					SolvePath();
 					Repaint();
 				} );
+				STEPLIMIT.RegisterCallback( (WheelEvent e) => {
+					Vector2 mouseScrollDelta = e.mouseDelta;
+					int scrollDir = (int) Mathf.Sign(mouseScrollDelta.y);
+					_steplimit = Mathf.Max( _steplimit - scrollDir , 0 );
+					STEPLIMIT.SetValueWithoutNotify( _steplimit );
+					NewRandomMap();
+					SolvePath();
+					Repaint();
+				} );
 			}
 			TOOLBAR_COLUMN_1.Add( STEPLIMIT );
 
@@ -292,7 +301,7 @@ namespace Tests
 				job.Run();
 				watch.Stop();
 				bool success = job.Results.Length!=0;
-				Debug.Log($"{nameof(NativeGrid.AStarJob)} took {(double)watch.ElapsedTicks/(double)System.TimeSpan.TicksPerMillisecond:G8} ms {(success?$"and succeeded in finding a path of {job.Results.Length} steps":"but no path was found")}.");
+				Debug.Log($"{nameof(NativeGrid.AStarJob)} took {(double)watch.ElapsedTicks/(double)System.TimeSpan.TicksPerMillisecond:G8} ms {(success?$"and succeeded in finding a path of {job.Results.Length} steps":"but <b>no path was found</b>")}.");
 
 				// copy debug data:
 				fData = job.FData.ToArray();

@@ -98,11 +98,21 @@ public abstract partial class NativeGrid
 			// solve
 			int2 node = -1;
 			int step = 0;
-			while( Frontier.Length!=0 && !math.all(node==Destination) && step<StepLimit )
+			bool destinationReached = false;
+			while(
+					Frontier.Length!=0
+				&&	!( destinationReached = math.all(node==Destination) )
+				&&	step<StepLimit
+			)
 			{
 				node = Frontier.Pop();// we grab candidate with lowest F
 				int node1d = Index2dTo1d( node , MoveCostWidth );
 				float node_g = GData[node1d];
+
+				// string frontierBefore = Frontier.ToString();
+				// node = Frontier.Pop();// we grab candidate with lowest F so far
+				// string frontierAfter = Frontier.ToString();
+				// Debug.Log($"step {step} at [{node.x},{node.y}]");// \nfrontier before: {frontierBefore}\nfrontier after: {frontierAfter}"
 
 				// lets check all its neighbours:
 				EnumerateNeighbours( Neighbours , MoveCostWidth , MoveCostWidth , node );
@@ -112,44 +122,53 @@ public abstract partial class NativeGrid
 					int2 neighbour = Neighbours[i];
 					int neighbour1d = Index2dTo1d( neighbour , MoveCostWidth );
 					bool orthogonal = math.any(node==neighbour);
-					float movecost = 0;//(MoveCost[neighbour1d]/255f);
-
-					// g - dist from start node
-					// h - dist from dest node as predicted by heuristic func
-
-					float g = node_g + ( 1f + movecost ) * ( orthogonal ? 1f : 1.41421356237f );
-					float h = EuclideanHeuristic( neighbour , Destination );
-					float f = g + h;
-					
-					// update G:
-					if( g<GData[neighbour1d] )
+					float movecost = ( MoveCost[neighbour1d] / 255f );
+					if( movecost<1f )
 					{
-						GData[neighbour1d] = (half) g;
-					}
+						// g - dist from start node
+						// h - dist from dest node as predicted by heuristic func
 
-					// update F:
-					if( f<FData[neighbour1d] )
-					{
-						FData[neighbour1d] = (half) f;
-						Solution[neighbour1d] = node;
+						float g = node_g + ( 1f + movecost ) * ( orthogonal ? 1f : 1.41421356237f );
+						float h = EuclideanHeuristic( neighbour , Destination );
+						float f = g + h;
+						
+						// update G:
+						if( g<GData[neighbour1d] )
+						{
+							GData[neighbour1d] = (half) g;
+						}
+
+						// update F:
+						if( f<FData[neighbour1d] )
+						{
+							FData[neighbour1d] = (half) f;
+							Solution[neighbour1d] = node;
+						}
+
+						// update frontier:
+						if( !Visited.Contains(neighbour) )
+							Frontier.Push(neighbour);
 					}
 
 					// update frontier:
-					if( !Visited.Contains(neighbour) )
-					{
-						Visited.Add(neighbour);
-						Frontier.Push(neighbour);
-					}
+					Visited.Add(neighbour);
 				}
 
 				step++;
 			}
-			// Debug.Log($"A* job took {step} steps");
+			Debug.Log($"A* job took {step} steps, {(destinationReached?"path resolved":"<b>no path found</b>")}.");
 
 			// create path:
-			bool success = BacktrackToPath( Solution , MoveCostWidth , Destination , Results );
+			if( destinationReached )
+			{
+				bool backtrackSuccess = BacktrackToPath( Solution , MoveCostWidth , Destination , Results );
+				Assert.IsTrue( backtrackSuccess );
+			}
+			else
+			{
+				Results.Clear();// make sure to communite there is no path
+			}
 		}
-		public static float G ( float g , float movecost , bool orthogonal ) => g + ( 1f + movecost ) * ( orthogonal ? 1f : 1.41421356237f );
 		public void Dispose ()
 		{
 			this.GData.Dispose();
