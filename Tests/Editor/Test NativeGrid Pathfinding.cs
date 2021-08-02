@@ -79,7 +79,7 @@ namespace Tests
 			} );
 			TOOLBAR_COLUMN_0.Add( HEURISTIC_COST );
 
-			var HEURISTIC_SEARCH = new FloatField( $"Move Cost Multiplier:" );
+			var HEURISTIC_SEARCH = new FloatField( $"Move Cost Sensitivity:" );
 			HEURISTIC_SEARCH.style.paddingLeft = HEURISTIC_SEARCH.style.paddingRight = 10;
 			HEURISTIC_SEARCH.value = _moveCostSensitivity;
 			HEURISTIC_SEARCH.RegisterValueChangedCallback( (e)=> {

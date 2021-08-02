@@ -88,14 +88,21 @@ public abstract partial class NativeGrid
 		}
 		public void Execute ()
 		{
-			int length = MoveCost.Length;
 			int start1d = Index2dTo1d( Start , MoveCostWidth );
+			int dest1d = Index2dTo1d( Destination , MoveCostWidth );
 			{
+				// early test for unsolvable input:
+				if( (MoveCost[start1d]/255f)>=1 ) return;
+				if( (MoveCost[dest1d]/255f)>=1 ) return;
+			}
+			{
+				// initialize GDAta array:
 				for( int i=GData.Length-1 ; i!=-1 ; i-- )
 					GData[i] = (half) half.MaxValue;
 				GData[start1d] = half.zero;
 			}
 			{
+				// initialize FDAta array:
 				for( int i=FData.Length-1 ; i!=-1 ; i-- )
 					FData[i] = (half) half.MaxValue;
 				FData[start1d] = half.zero;
