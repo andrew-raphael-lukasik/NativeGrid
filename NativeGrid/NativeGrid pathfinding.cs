@@ -39,9 +39,9 @@ public abstract partial class NativeGrid
 		public NativeArray<half> GData;
 		public NativeArray<half> FData;
 		public NativeArray<int2> Solution;
-		NativeMinHeap<int2,AStarJobComparer> Frontier;
+		public NativeMinHeap<int2,AStarJobComparer> Frontier;
 		public NativeHashSet<int2> Visited;
-		NativeList<int2> Neighbours;
+		public NativeList<int2> Neighbours;
 		public int StepBudget;
 
 		/// <summary> Traces path using some kind of A* algorithm </summary>
