@@ -191,7 +191,10 @@ public partial class NativeGrid <STRUCT>
 	public void Dispose ()
 	{
 		if( _array.IsCreated )
+		{
+			Dependency.Complete();
 			_array.Dispose();
+		}
 	}
 
 
