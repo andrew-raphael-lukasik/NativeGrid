@@ -14,6 +14,13 @@ FEATURES:
 - enumerate neighbouring cells, enumerate all cells along growing spiral-shaped path
 - Bresenham's trace line algorithm
 - A*/AStar implementation
+  <p float="center">
+    <img src="https://i.imgur.com/HsFXAGI.gif" width="49%">
+    <img src="https://i.imgur.com/enK6UOs.gif" width="49%">
+  </p>
+
+  > Test window available under: Test>NativeGrid>Pathfinding
+
 - You can process Texture2D without (managed) allocations by nesting it's native array inside NativeGrid<span><</span>RGB24<span>></span>. You can trace and draw lines/paths on that texture for example.
 <br>(relevant raw color structs: https://github.com/andrew-raphael-lukasik/RawTextureDataProcessingExamples)
 - Marching squares method (all 8 neighbours to byte)
@@ -34,9 +41,3 @@ Or via `Package Manager` / `Add package from git URL`:
 ```
 https://github.com/andrew-raphael-lukasik/NativeGrid.git#upm
 ```
-<p float="center">
-  <img src="https://i.imgur.com/HsFXAGI.gif" width="49%">
-  <img src="https://i.imgur.com/enK6UOs.gif" width="49%">
-</p>
-
-Test window available under: Test>NativeGrid>Pathfinding
