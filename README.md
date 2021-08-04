@@ -24,12 +24,6 @@ TODO:
 - trace bezier curves
 - improve A* speed
 
-![astar gif 1 goes here](https://i.imgur.com/HsFXAGI.gif)
-![astar gif 2 goes here](https://i.imgur.com/enK6UOs.gif)
-![astar gif 2 goes here](https://i.imgur.com/0o88DXY.gif)
-
-Test window available under: Test>NativeGrid>Pathfinding
-
 # installation
 Add this line in `manifest.json` / `dependencies`:
 ```
@@ -40,3 +34,9 @@ Or via `Package Manager` / `Add package from git URL`:
 ```
 https://github.com/andrew-raphael-lukasik/NativeGrid.git#upm
 ```
+<p float="center">
+  <img src="https://i.imgur.com/HsFXAGI.gif" width="49%">
+  <img src="https://i.imgur.com/enK6UOs.gif" width="49%">
+</p>
+
+Test window available under: Test>NativeGrid>Pathfinding
