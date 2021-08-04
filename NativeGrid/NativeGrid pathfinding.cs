@@ -29,12 +29,13 @@ public abstract partial class NativeGrid
 		/// <summary> Job results goes here. List of indices to form a path. </summary>
 		public NativeList<int2> Results;
 
-		readonly int2 Start;
-		readonly int2 Destination;
-		[ReadOnly] readonly NativeArray<byte> MoveCost;
-		readonly int MoveCostWidth;
-		readonly float HMultiplier;
-		readonly float MoveCostSensitivity;
+		public readonly int2 Start;
+		public readonly int2 Destination;
+		[ReadOnly] public readonly NativeArray<byte> MoveCost;
+		public readonly int MoveCostWidth;
+		public readonly float HMultiplier;
+		public readonly float MoveCostSensitivity;
+		public readonly int StepBudget;
 
 		public NativeArray<half> GData;
 		public NativeArray<half> FData;
@@ -42,7 +43,6 @@ public abstract partial class NativeGrid
 		public NativeMinHeap<int2,AStarJobComparer> Frontier;
 		public NativeHashSet<int2> Visited;
 		public NativeList<int2> Neighbours;
-		public int StepBudget;
 
 		/// <summary> Traces path using some kind of A* algorithm </summary>
 		/// <param name="start"> Start index 2d </param>
