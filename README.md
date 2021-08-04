@@ -24,7 +24,9 @@ TODO:
 - trace bezier curves
 - improve A* speed
 
-![astar gif goes here](https://i.imgur.com/vW5bVeQ.gif)
+![astar gif 1 goes here](https://i.imgur.com/HsFXAGI.gif)
+![astar gif 2 goes here](https://i.imgur.com/enK6UOs.gif)
+![astar gif 2 goes here](https://i.imgur.com/0o88DXY.gif)
 
 Test window available under: Test>NativeGrid>Pathfinding
 
