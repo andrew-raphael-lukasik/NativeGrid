@@ -185,7 +185,10 @@ public abstract partial class NativeGrid
 				// Debug.Log($"A* job took {step} steps, path resolved.");
 
 				bool backtrackSuccess = BacktrackToPath( Solution , MoveCostWidth , Destination , Results , ResultsStartAtIndexZero );
+				
+				#if UNITY_ASSERTIONS
 				Assert.IsTrue( backtrackSuccess );
+				#endif
 			}
 			else
 			{
