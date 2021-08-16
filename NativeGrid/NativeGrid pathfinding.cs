@@ -36,6 +36,7 @@ public abstract partial class NativeGrid
 		public readonly float HMultiplier;
 		public readonly float MoveCostSensitivity;
 		public readonly int StepBudget;
+		public readonly bool ResultsStartAtIndexZero;
 
 		public NativeArray<half> GData;
 		public NativeArray<half> FData;
@@ -53,6 +54,7 @@ public abstract partial class NativeGrid
 		/// <param name="hMultiplier"> Heuristic factor multiplier. Increasing this over 1.0 makes lines more straight and decrease cpu usage. </param>
 		/// <param name="moveCostSensitivity"> Makes algorith evade cells with move cost > 0 more.</param>
 		/// <param name="stepBudget"> CPU time budget you give this job. Expressind in number steps search algorihm is allowed to take.</param>
+		/// <param name="resultsStartAtIndexZero"> When this is true then path indices in <param name="results"> will be ordered starting from index 0 and eding at index length-1. False reverses this order.</param>
 		public unsafe AStarJob
 		(
 			INT2 start ,
@@ -62,7 +64,8 @@ public abstract partial class NativeGrid
 			NativeList<int2> results ,
 			float hMultiplier = 1 ,
 			float moveCostSensitivity = 1 ,
-			int stepBudget = int.MaxValue
+			int stepBudget = int.MaxValue ,
+			bool resultsStartAtIndexZero = true
 		)
 		{
 			this.Start = start;
@@ -73,6 +76,7 @@ public abstract partial class NativeGrid
 			this.HMultiplier = hMultiplier;
 			this.MoveCostSensitivity = moveCostSensitivity;
 			this.StepBudget = stepBudget;
+			this.ResultsStartAtIndexZero = resultsStartAtIndexZero;
 
 			int length = moveCost.Length;
 			int start1d = Index2dTo1d( start , moveCostWidth );
@@ -180,8 +184,11 @@ public abstract partial class NativeGrid
 			{
 				// Debug.Log($"A* job took {step} steps, path resolved.");
 
-				bool backtrackSuccess = BacktrackToPath( Solution , MoveCostWidth , Destination , Results );
+				bool backtrackSuccess = BacktrackToPath( Solution , MoveCostWidth , Destination , Results , ResultsStartAtIndexZero );
+				
+				#if UNITY_ASSERTIONS
 				Assert.IsTrue( backtrackSuccess );
+				#endif
 			}
 			else
 			{
@@ -232,7 +239,8 @@ public abstract partial class NativeGrid
 		NativeArray<int2> solution ,
 		INT width ,
 		INT2 destination ,
-		NativeList<int2> results
+		NativeList<int2> results ,
+		bool resultsStartAtIndexZero
 	)
 	{
 		results.Clear();
@@ -251,8 +259,8 @@ public abstract partial class NativeGrid
 		}
 		bool wasDestinationReached = math.all( pos==solution[pos1d] );
 
-		// TODO: can this step be avoided?
-		ReverseArray<int2>( results );
+		if( resultsStartAtIndexZero )
+			ReverseArray<int2>( results );
 
 		return wasDestinationReached;
 	}
