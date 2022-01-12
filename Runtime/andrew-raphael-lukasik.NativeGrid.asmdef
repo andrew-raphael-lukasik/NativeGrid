@@ -1,5 +1,6 @@
 {
-    "name": "NativeGrid",
+    "name": "andrew-raphael-lukasik.NativeGrid",
+    "rootNamespace": "NativeGridNamespace",
     "references": [
         "Unity.Burst",
         "Unity.Collections",

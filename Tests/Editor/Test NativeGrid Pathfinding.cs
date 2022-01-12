@@ -7,9 +7,9 @@ using Unity.Mathematics;
 using Unity.Collections;
 using Unity.Jobs;
 
-namespace Tests
+namespace NativeGridNamespace.Tests
 {
-	public class Test_NativeGrid_Pathfinding : EditorWindow
+	public class PathfindingTester : EditorWindow
 	{
 
 		VisualElement[] _grid;
@@ -214,7 +214,7 @@ namespace Tests
 		[MenuItem("Test/NativeGrid/Pathfinding")]
 		static void ShowWindow ()
 		{
-			var window = GetWindow<Test_NativeGrid_Pathfinding>();
+			var window = GetWindow<PathfindingTester>();
 			window.titleContent = new GUIContent("NativeGrid Pathfinding Test");
 			window.minSize = new Vector2{ x=512+4 , y=512+4+60 };
 		}
@@ -308,8 +308,8 @@ namespace Tests
 				Debug.Log($"{nameof(NativeGrid.AStarJob)} took {(double)watch.ElapsedTicks/(double)System.TimeSpan.TicksPerMillisecond:G8} ms {(success?$"and succeeded in finding a path of {job.Results.Length} steps":"but <b>no path was found</b>")}.");
 
 				// copy debug data:
-				fData = job.FData.ToArray();
-				gData = job.GData.ToArray();
+				fData = job.F.ToArray();
+				gData = job.G.ToArray();
 				solution = job.Solution.ToArray();
 				using( var nativeArray = job.Visited.ToNativeArray(Allocator.Temp) ) visited = nativeArray.ToArray();
 

@@ -1,0 +1,26 @@
+{
+    "name": "andrew-raphael-lukasik.NativeGrid.Editor.Tests",
+    "rootNamespace": "",
+    "references": [
+        "andrew-raphael-lukasik.NativeGrid",
+        "Unity.Burst",
+        "Unity.Collections",
+        "Unity.Jobs",
+        "Unity.Mathematics",
+        "Unity.Mathematics.Extensions",
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner",
+        "TestAssemblies"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
