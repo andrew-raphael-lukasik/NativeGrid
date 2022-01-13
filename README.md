@@ -1,19 +1,35 @@
 # NativeGrid
-GOALS:
-1. Create grid data class that works well with Unity.Jobs and ECS.
-<br>"Grid", here, means 1d array that usefully pretends to be 2d to bring some ease working with data that has some kind of 2 spatial components (screen/texture space, XZ world space, etc.).
-2. No GC allocations outside DEBUG. It's no NativeContainer tho.
 
-  Note: NativeGrid will remain a class. Mutable fields such as 'JobHandle Dependency' benefits from being allocated somewhere on the heap. Also this enables inheritance semantics providing some additional extensibility.
+Bunch of 2D data utilities for ECS, Unity.Jobs.
 
-WARNING: Not all features are production-ready, this is work-in-progress code
-
-FEATURES:
-- Uses NativeArray<span><</span>T<span>></span> where T : unmanaged
-- Schedule your jobs to read/write to grid.Array using grid.Dependency JobHandle (!)
-- enumerate neighbouring cells, enumerate all cells along growing spiral-shaped path
-- Bresenham's trace line algorithm
-- A*/AStar implementation
+- Managed container to store state of unmanaged allocation
+```
+[SerializeField] int Width, Height;
+void OnEnable ()
+{
+	Pixels = new NativeGrid<RGB24>( width:Width , height:Height , Allocator.Persistent );
+}
+void Update ()
+{
+	/* does something useful with Pixels */
+}
+void OnDisable ()
+{
+	Pixels.Dispose();
+}
+public struct RGB24 { public byte R,G,B; }
+```
+- Schedule your jobs to read/write to grid.Array using grid.Dependency JobHandle
+- Performant, allocation-free enumerator to find all neighbouring cells (`NeighbourEnumerator : INativeEnumerator<int2>`)
+```
+var enumerator = new NeighbourEnumerator( coord:new int2(0,1) , gridWidth:128 , gridHeight:128 );
+while( enumerator.MoveNext(out int2 neighbourCoord) )
+{
+    /* wow, it's so easy :O */
+}
+```
+- Trace lines (Bresenham's algorithm)
+- Decent A*/AStar implementation
   <p float="center">
     <img src="https://i.imgur.com/HsFXAGI.gif" width="49%">
     <img src="https://i.imgur.com/enK6UOs.gif" width="49%">
@@ -23,13 +39,6 @@ FEATURES:
 
 - You can process Texture2D without (managed) allocations by nesting it's native array inside NativeGrid<span><</span>RGB24<span>></span>. You can trace and draw lines/paths on that texture for example.
 <br>(relevant raw color structs: https://github.com/andrew-raphael-lukasik/RawTextureDataProcessingExamples)
-- Marching squares method (all 8 neighbours to byte)
-
-TODO:
-- continue ideas started with https://github.com/andrew-raphael-lukasik/GridT
-- make it more usefull
-- trace bezier curves
-- improve A* speed
 
 # installation
 Add this line in `manifest.json` / `dependencies`:
