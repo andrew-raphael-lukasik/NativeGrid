@@ -27,7 +27,7 @@ namespace NativeGridNamespace
 
 			return y * width + x;
 		}
-		public static int CoordToIndex ( INT2 i2 , INT width ) => CoordToIndex( i2.x , i2.y , width );
+		public static int CoordToIndex ( INT2 coord , INT width ) => CoordToIndex( coord.x , coord.y , width );
 
 
 		/// <summary> Translate regional coordinate to outer array index </summary>
@@ -70,7 +70,7 @@ namespace NativeGridNamespace
 
 		/// <summary> Determines whether int2 coord is inside array bounds </summary>
 		public static bool IsCoordValid ( INT x , INT y , INT w , INT h ) => x>=0 && x<w && y>=0 && y<h;
-		public static bool IsCoordValid ( INT2 i2 , INT w , INT h ) => IsCoordValid( i2.x , i2.y , w , h );
+		public static bool IsCoordValid ( INT2 coord , INT w , INT h ) => IsCoordValid( coord.x , coord.y , w , h );
 
 
 		/// <summary> Determines whether index is inside array bounds </summary>
@@ -79,8 +79,8 @@ namespace NativeGridNamespace
 
 		/// <summary> Point from a coordinate </summary>
 		public static float2 CoordToPoint ( INT x , INT y , FLOAT stepX , FLOAT stepY ) => new float2{ x=(float)x*stepX , y=(float)y*stepY };
-		public static float2 CoordToPoint ( INT2 i2 , FLOAT stepX , FLOAT stepY ) => CoordToPoint( i2.x , i2.y , stepX , stepY );
-		public static float2 CoordToPoint ( INT2 i2 , FLOAT2 step ) => CoordToPoint( i2.x , i2.y , step.x , step.y );
+		public static float2 CoordToPoint ( INT2 coord , FLOAT stepX , FLOAT stepY ) => CoordToPoint( coord.x , coord.y , stepX , stepY );
+		public static float2 CoordToPoint ( INT2 coord , FLOAT2 step ) => CoordToPoint( coord.x , coord.y , step.x , step.y );
 
 
 		/// <summary> Value at point </summary>
@@ -151,7 +151,7 @@ namespace NativeGridNamespace
 
 		public static int ClampIndex ( INT i , INT length ) => math.clamp( i , 0 , length-1 );
 		public static int2 ClampCoord ( INT x , INT y , INT width , INT height ) => math.clamp( new int2{ x=x , y=y } , int2.zero , new int2{ x=width-1 , y=height-1 } );
-		public static int2 ClampCoord ( INT2 i2 , INT width , INT height ) => ClampCoord( i2.x , i2.y , width , height );
+		public static int2 ClampCoord ( INT2 coord , INT width , INT height ) => ClampCoord( coord.x , coord.y , width , height );
 		
 
 		/// <summary> System.Math.Round( value, System.MidpointRounding.AwayFromZero ) equivalent </summary>
