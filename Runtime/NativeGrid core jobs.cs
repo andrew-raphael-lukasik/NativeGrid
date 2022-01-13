@@ -1,12 +1,12 @@
 /// homepage: https://github.com/andrew-raphael-lukasik/NativeGrid
-
 using UnityEngine;
 using UnityEngine.Assertions;
-
 using Unity.Mathematics;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
+
+using BurstCompile = Unity.Burst.BurstCompileAttribute;
 
 namespace NativeGridNamespace
 {
@@ -16,6 +16,7 @@ namespace NativeGridNamespace
 		#region JOBS
 
 
+		[BurstCompile]
 		public static JobHandle Copy <T>
 		(
 			NativeGrid<T> source ,
@@ -37,6 +38,7 @@ namespace NativeGridNamespace
 			);
 		}
 
+		[BurstCompile]
 		public unsafe struct CopyJob <T> : IJob where T : unmanaged
 		{
 			[ReadOnly] NativeArray<T> src;
@@ -57,6 +59,7 @@ namespace NativeGridNamespace
 			}
 		}
 
+		[BurstCompile]
 		public struct CopyJob <SRC,DST> : IJob
 			where SRC : unmanaged
 			where DST : unmanaged
@@ -79,7 +82,7 @@ namespace NativeGridNamespace
 			}
 		}
 
-		[Unity.Burst.BurstCompile]
+		[BurstCompile]
 		public struct CopyRegionJob <T> : IJobParallelFor where T : unmanaged
 		{
 			[ReadOnly] NativeArray<T> src;
@@ -96,7 +99,7 @@ namespace NativeGridNamespace
 			void IJobParallelFor.Execute ( int regionIndex ) => dst[regionIndex] = src[IndexTranslate(src_region,regionIndex,src_width)];
 		}
 
-		[Unity.Burst.BurstCompile]
+		[BurstCompile]
 		public struct FillJob <T> : IJobParallelFor where T : unmanaged
 		{
 			[WriteOnly] NativeArray<T> array;
@@ -109,7 +112,7 @@ namespace NativeGridNamespace
 			void IJobParallelFor.Execute ( int i ) => array[i] = value;
 		}
 
-		[Unity.Burst.BurstCompile]
+		[BurstCompile]
 		public struct FillRegionJob <T> : IJobParallelFor where T : unmanaged
 		{
 			[WriteOnly][NativeDisableParallelForRestriction]
@@ -127,7 +130,7 @@ namespace NativeGridNamespace
 			void IJobParallelFor.Execute ( int regionIndex ) => array[IndexTranslate( region , regionIndex , array_width )] = value;
 		}
 
-		[Unity.Burst.BurstCompile]
+		[BurstCompile]
 		public struct FillBordersJob <T> : IJob where T : unmanaged
 		{
 			[WriteOnly][NativeDisableParallelForRestriction]

@@ -59,14 +59,14 @@ namespace NativeGridNamespace.Tests
 				
 				var enumerator = new NativeGrid.NeighbourEnumerator( coord:test.coord , gridWidth:test.gridWidth , gridHeight:test.gridheight );
 				var results = new List<int2>( capacity:8 );
-				while( enumerator.MoveNext(out int2 i2) )
-					results.Add(i2);
+				while( enumerator.MoveNext(out int2 coord) )
+					results.Add(coord);
 				
 				{
 					var sb = new System.Text.StringBuilder("{");
-					foreach( int2 i2 in results )
+					foreach( int2 coord in results )
 					{
-						sb.AppendFormat(" ({0},{1})",i2.x,i2.y);
+						sb.AppendFormat(" ({0},{1})",coord.x,coord.y);
 						sb.Append(" ,");
 					}
 					if( sb[sb.Length-1]==',' ) sb.Remove(sb.Length-1,1);

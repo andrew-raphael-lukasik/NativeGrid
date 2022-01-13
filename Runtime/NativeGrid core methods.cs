@@ -97,7 +97,7 @@ namespace NativeGridNamespace
 		/// <returns> Get ref to array element </returns>
 		/// <note> Make sure index is in bound </note>
 		public unsafe ref T AsRef ( int x , int y ) => ref AsRef( CoordToIndex( x , y , this.Width ) );
-		public unsafe ref T AsRef ( INT2 i2 ) => ref AsRef( CoordToIndex( i2 , this.Width ) );
+		public unsafe ref T AsRef ( INT2 coord ) => ref AsRef( CoordToIndex( coord , this.Width ) );
 		public unsafe ref T AsRef ( int i ) => ref ( (T*)_array.GetUnsafePtr() )[i];
 
 

@@ -67,10 +67,10 @@ namespace NativeGridNamespace
 			set { _array[CoordToIndex(x,y)] = value; }
 		}
 
-		public T this [ INT2 i2 ]
+		public T this [ INT2 coord ]
 		{
-			get { return _array[CoordToIndex(i2)]; }
-			set { _array[CoordToIndex(i2)] = value; }
+			get { return _array[CoordToIndex(coord)]; }
+			set { _array[CoordToIndex(coord)] = value; }
 		}
 
 		#endregion

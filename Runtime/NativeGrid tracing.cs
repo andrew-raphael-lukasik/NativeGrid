@@ -1,7 +1,5 @@
 /// homepage: https://github.com/andrew-raphael-lukasik/NativeGrid
-
 using UnityEngine;
-
 using Unity.Mathematics;
 using Unity.Collections;
 using Unity.Jobs;
