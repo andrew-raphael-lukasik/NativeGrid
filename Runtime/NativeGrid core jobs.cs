@@ -10,9 +10,7 @@ using Unity.Jobs;
 
 namespace NativeGridNamespace
 {
-	/// <summary>
-	/// Abstract parent class for generic NativeGrid<T>. To simplify referencing static functions/types from "NativeGrid<byte>.Index1dTo2d(i)" to "NativeGrid.Index1dTo2d(i)".
-	/// </summary>
+	/// <summary> Non-generic, abstract parent class for NativeGrid<T>. </summary>
 	public abstract partial class NativeGrid
 	{
 		#region JOBS
