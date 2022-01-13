@@ -20,28 +20,28 @@ namespace NativeGridNamespace
 		#region index transformation methods
 
 
-		/// <summary> Converts index 2d to 1d equivalent </summary>
-		public int Index2dTo1d ( int x , int y )
+		/// <summary> Converts coord to it's index equivalent </summary>
+		public int CoordToIndex ( int x , int y )
 		{
 			#if DEBUG
-			if( IsIndex2dValid(x,y)==false ) { Debug.LogWarningFormat( "[{0},{1}] index is invalid for this grid" , x , y ); }
+			if( IsCoordValid(x,y)==false ) { Debug.LogWarningFormat( "[{0},{1}] index is invalid for this grid" , x , y ); }
 			#endif
 			return y * Width + x;
 		}
-		public int Index2dTo1d ( INT2 index2d ) => Index2dTo1d( index2d.x , index2d.y );
-		public int Index2dTo1d ( int2 index2d ) => Index2dTo1d( index2d.x , index2d.y );
+		public int CoordToIndex ( INT2 coord ) => CoordToIndex( coord.x , coord.y );
+		public int CoordToIndex ( int2 coord ) => CoordToIndex( coord.x , coord.y );
 
 		
-		/// <summary> Converts 1d to 2d array index </summary>
-		public int2 Index1dTo2d ( int i ) => new int2 { x=i%Width , y=i/Width };
+		/// <summary> Converts index to coord </summary>
+		public int2 IndexToCoord ( int i ) => new int2 { x=i%Width , y=i/Width };
 
 		
 		/// <summary> Transforms local position to cell index </summary>
-		public bool LocalPointToIndex2d ( FLOAT3 localPoint , float spacing , out int2 result )
+		public bool LocalPointToCoord ( FLOAT3 localPoint , float spacing , out int2 result )
 		{
 			int x = (int)( ( localPoint.x+(float)Width*0.5f*spacing )/spacing );
 			int z = (int)( ( localPoint.z+(float)Height*0.5f*spacing )/spacing );
-			if( IsIndex2dValid(x,z) )
+			if( IsCoordValid(x,z) )
 			{
 				result = new int2{ x=x , y=z };
 				return true;
@@ -52,13 +52,13 @@ namespace NativeGridNamespace
 		}
 
 
-		/// <summary> Determines whether index 2d is inside array bounds </summary>
-		public bool IsIndex2dValid ( int x , int y ) => IsIndex2dValid( x , y , Width , Height );
-		public bool IsIndex2dValid ( INT2 index2d ) => IsIndex2dValid( index2d.x , index2d.y );
+		/// <summary> Determines whether coord is inside array bounds </summary>
+		public bool IsCoordValid ( int x , int y ) => IsCoordValid( x , y , Width , Height );
+		public bool IsCoordValid ( INT2 coord ) => IsCoordValid( coord.x , coord.y );
 
 
-		/// <summary> Determines whether index 1d is inside array bounds </summary>
-		public bool IsIndex1dValid ( int i ) => IsIndex1dValid( i , this.Length );
+		/// <summary> Determines whether index is inside array bounds </summary>
+		public bool IsIndexValid ( int i ) => IsIndexValid( i , this.Length );
 
 
 		/// <summary> Transforms index to local position. </summary>
@@ -70,13 +70,13 @@ namespace NativeGridNamespace
 				( (float)y*spacing )+( -Height*spacing*0.5f )+( spacing*0.5f )
 			);
 		}
-		public float3 IndexToLocalPoint ( int index1d , float spacing )
+		public float3 IndexToLocalPoint ( int index , float spacing )
 		{
-			int2 index2d = Index1dTo2d( index1d );
+			int2 coord = IndexToCoord( index );
 			return new float3(
-				( index2d.x*spacing )+( -Width*spacing*0.5f )+( spacing*0.5f ) ,
+				( coord.x*spacing )+( -Width*spacing*0.5f )+( spacing*0.5f ) ,
 				0f ,
-				( index2d.y*spacing )+( -Height*spacing*0.5f )+( spacing*0.5f )
+				( coord.y*spacing )+( -Height*spacing*0.5f )+( spacing*0.5f )
 			);
 		}
 
@@ -96,8 +96,8 @@ namespace NativeGridNamespace
 
 		/// <returns> Get ref to array element </returns>
 		/// <note> Make sure index is in bound </note>
-		public unsafe ref T AsRef ( int x , int y ) => ref AsRef( Index2dTo1d( x , y , this.Width ) );
-		public unsafe ref T AsRef ( INT2 i2 ) => ref AsRef( Index2dTo1d( i2 , this.Width ) );
+		public unsafe ref T AsRef ( int x , int y ) => ref AsRef( CoordToIndex( x , y , this.Width ) );
+		public unsafe ref T AsRef ( INT2 i2 ) => ref AsRef( CoordToIndex( i2 , this.Width ) );
 		public unsafe ref T AsRef ( int i ) => ref ( (T*)_array.GetUnsafePtr() )[i];
 
 
@@ -113,10 +113,10 @@ namespace NativeGridNamespace
 		///		5 4 3		[x-1,y-1]   [x,y-1]   [x+1,y-1]
 		/// for example: 1<<0 is top, 1<<1 is top-right, 1<<2 is right, 1<<6|1<<4|1<<2 is both left,down and right
 		/// </returns>
-		public byte GetMarchingSquares ( INT2 index2d , System.Predicate<T> predicate )
+		public byte GetMarchingSquares ( INT2 coord , System.Predicate<T> predicate )
 		{
-			int x = index2d.x;
-			int y = index2d.y;
+			int x = coord.x;
+			int y = coord.y;
 
 			const byte zero = 0b_0000_0000;
 			byte result = zero;

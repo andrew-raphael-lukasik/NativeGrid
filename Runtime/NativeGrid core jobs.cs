@@ -148,15 +148,15 @@ namespace NativeGridNamespace
 				int yMax = height-1;
 				for( int x=0 ; x<width ; x++ )
 				{
-					array[Index2dTo1d(x,0,width)] = fill;
-					array[Index2dTo1d(x,yMax,width)] = fill;
+					array[CoordToIndex(x,0,width)] = fill;
+					array[CoordToIndex(x,yMax,width)] = fill;
 				}
 				// fill vertical border lines:
 				int xMax = width-1;
 				for( int y = 1 ; y < height-1 ; y++ )
 				{
-					array[Index2dTo1d(0,y,width)] = fill;
-					array[Index2dTo1d(xMax,y,width)] = fill;
+					array[CoordToIndex(0,y,width)] = fill;
+					array[CoordToIndex(xMax,y,width)] = fill;
 				}
 			}
 		}

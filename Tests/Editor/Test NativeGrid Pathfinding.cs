@@ -320,7 +320,7 @@ namespace NativeGridNamespace.Tests
 			// visualize:
 			{
 				// start cell
-				int startI = NativeGrid.Index2dTo1d( _startI2 , _resolution );
+				int startI = NativeGrid.CoordToIndex( _startI2 , _resolution );
 				var cellStyle = _grid[startI].style;
 				Color col = cellStyle.backgroundColor.value * 0.75f;
 				col.r = 1f;
@@ -328,7 +328,7 @@ namespace NativeGridNamespace.Tests
 			}
 			foreach( var i2 in path )// path
 			{
-				int i = NativeGrid.Index2dTo1d( i2 , _resolution );
+				int i = NativeGrid.CoordToIndex( i2 , _resolution );
 				var cellStyle = _grid[i].style;
 				Color col = cellStyle.backgroundColor.value * 0.75f;
 				col.r = 1f;
@@ -336,7 +336,7 @@ namespace NativeGridNamespace.Tests
 			}
 			foreach( var i2 in visited )// visited
 			{
-				int i = NativeGrid.Index2dTo1d( i2 , _resolution );
+				int i = NativeGrid.CoordToIndex( i2 , _resolution );
 				var CELL = _grid[i];
 				
 				var cellStyle = CELL.style;
@@ -348,7 +348,7 @@ namespace NativeGridNamespace.Tests
 			for( int i=fData.Length-1 ; i!=-1 ; i-- )// labels
 			{
 				var CELL = _grid[i];
-				int2 i2 = NativeGrid.Index1dTo2d( i , _resolution );
+				int2 i2 = NativeGrid.IndexToCoord( i , _resolution );
 				Label LABEL = CELL[0] as Label;
 
 				var f = fData[i];

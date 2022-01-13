@@ -1,14 +1,10 @@
 ﻿/// homepage: https://github.com/andrew-raphael-lukasik/NativeGrid
-
-using Unity.Mathematics;
 using Unity.Collections;
 using Unity.Jobs;
 
 namespace NativeGridNamespace
 {
-	/// <summary>
-	/// NativeGrid<T> is grid data layout class. Parent NativeGrid class is for static functions and nested types.
-	/// </summary>
+	/// <summary> NativeGrid<T> holds NativeArray<T> inside. </summary>
 	public partial class NativeGrid <T>
 		: NativeGrid, System.IDisposable
 		where T : unmanaged
@@ -16,9 +12,7 @@ namespace NativeGridNamespace
 		#region FIELDS & PROPERTIES
 
 
-		/// <summary> Internal 1d data array </summary>
 		public NativeArray<T> Array => _array;
-		[System.Obsolete("Renamed to 'Array'")] public NativeArray<T> Values => Array;
 		protected NativeArray<T> _array;
 
 		public readonly int Width;
@@ -28,9 +22,7 @@ namespace NativeGridNamespace
 		public bool IsCreated => _array.IsCreated;
 		public JobHandle Dependency = default(JobHandle);
 
-		[System.Obsolete("Renamed to: 'Dependency'")] public JobHandle WriteAccess { get => Dependency; set => Dependency = value; }
-
-
+		
 		#endregion
 		#region CONSTRUCTORS
 
@@ -71,14 +63,14 @@ namespace NativeGridNamespace
 
 		public T this [ int x , int y ]
 		{
-			get { return _array[Index2dTo1d(x,y)]; }
-			set { _array[Index2dTo1d(x,y)] = value; }
+			get { return _array[CoordToIndex(x,y)]; }
+			set { _array[CoordToIndex(x,y)] = value; }
 		}
 
 		public T this [ INT2 i2 ]
 		{
-			get { return _array[Index2dTo1d(i2)]; }
-			set { _array[Index2dTo1d(i2)] = value; }
+			get { return _array[CoordToIndex(i2)]; }
+			set { _array[CoordToIndex(i2)] = value; }
 		}
 
 		#endregion

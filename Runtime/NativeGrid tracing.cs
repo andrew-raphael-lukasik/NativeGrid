@@ -102,6 +102,22 @@ namespace NativeGridNamespace
 			}
 		}
 
+		public struct TraceLineJob<T> : IJob
+			where T : unmanaged
+		{
+			public NativeArray<T> Array;
+			public int2 Start, End;
+			void IJob.Execute ()
+			{
+				var indices = new NativeList<int2>( (int)( math.distance(Start,End) * math.SQRT2 ) , Allocator.Temp );
+				TraceLine( results:indices , A:Start , B:End );
+				foreach( int2 coord in indices )
+				{
+					
+				}
+			}
+		}
+
 
 		#endregion
 	}

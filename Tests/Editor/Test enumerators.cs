@@ -12,7 +12,7 @@ namespace NativeGridNamespace.Tests
 {
 	static class Enumerators
 	{
-		static ( int2 index2D , int gridWidth , int gridheight , int2[] expected )[] _tests = new ( int2 , int , int , int2[] )[]{
+		static ( int2 coord , int gridWidth , int gridheight , int2[] expected )[] _tests = new ( int2 , int , int , int2[] )[]{
 			( new int2(1,1) , 0 , 0 , new int2[0] ) ,
 			( new int2(-1,1) , 0 , 0 , new int2[0] ) ,
 			( new int2(1,-1) , 0 , 0 , new int2[0] ) ,
@@ -55,9 +55,9 @@ namespace NativeGridNamespace.Tests
 			Debug.Log("test start");
 			foreach( var test in _tests )
 			{
-				Debug.Log( $"case: index2D: ( {test.index2D.x} , {test.index2D.y} ) , gridWidth:{test.gridWidth} , gridHeight:{test.gridheight}" );
+				Debug.Log( $"case: coord: ( {test.coord.x} , {test.coord.y} ) , gridWidth:{test.gridWidth} , gridHeight:{test.gridheight}" );
 				
-				var enumerator = new NativeGrid.NeighbourEnumerator( index2D:test.index2D , gridWidth:test.gridWidth , gridHeight:test.gridheight );
+				var enumerator = new NativeGrid.NeighbourEnumerator( coord:test.coord , gridWidth:test.gridWidth , gridHeight:test.gridheight );
 				var results = new List<int2>( capacity:8 );
 				while( enumerator.MoveNext(out int2 i2) )
 					results.Add(i2);
