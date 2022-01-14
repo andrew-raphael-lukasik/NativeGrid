@@ -8,10 +8,10 @@ Managed container that stores `NativeArray` with it's basic info to use in 2d/gr
 
 ---
 
-Here is an example how you can store store `RawTextureData` (pointer to a CPU-side texture buffer) inside this NativeGrid<span><</span>RGB24<span>></span>-thing and do something ambiguously useful with it: trace and draw lines/paths on that texture ([more relevant info](https://github.com/andrew-raphael-lukasik/RawTextureDataProcessingExamples)).
+Here is an example how you can store store `RawTextureData` (pointer to a CPU-side texture buffer) inside this `NativeGrid<RGB24>`-thing and do something ambiguously useful with it, like idk, trace and draw lines/paths on that texture ([more relevant info](https://github.com/andrew-raphael-lukasik/RawTextureDataProcessingExamples)).
 
 Note: this saves RAM because texture memory is not being duplicated on CPU-side anymore.
-```
+```csharp
 using UnityEngine;
 using Unity.Mathematics;
 using NativeGridNamespace;
