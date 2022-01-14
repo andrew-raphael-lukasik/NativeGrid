@@ -131,6 +131,34 @@ namespace NativeGridNamespace
 		}
 
 		[BurstCompile]
+		public struct FillLineJob<T> : IJob
+			where T : unmanaged
+		{
+			public NativeArray<T> Array;
+			public int ArrayWidth;
+			public int2 Start, End;
+			public T Fill;
+			public FillLineJob ( NativeArray<T> array , int arrayWidth , int2 start , int2 end , T fill )
+			{
+				this.Array = array;
+				this.ArrayWidth = arrayWidth;
+				this.Start = start;
+				this.End = end;
+				this.Fill = fill;
+			}
+			void IJob.Execute ()
+			{
+				var indices = new NativeList<int2>( (int)( math.distance(Start,End) * math.SQRT2 ) , Allocator.Temp );
+				TraceLine( A:Start , B:End , results:indices , min:int2.zero , max:new int2{ x=this.ArrayWidth-1 , y=(this.Array.Length/this.ArrayWidth)-1 } );
+				foreach( int2 coord in indices )
+				{
+					int i = CoordToIndex( coord:coord , width:ArrayWidth );
+					Array[i] = Fill;
+				}
+			}
+		}
+
+		[BurstCompile]
 		public struct FillBordersJob <T> : IJob where T : unmanaged
 		{
 			[WriteOnly][NativeDisableParallelForRestriction]

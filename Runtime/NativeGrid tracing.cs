@@ -2,7 +2,6 @@
 using UnityEngine;
 using Unity.Mathematics;
 using Unity.Collections;
-using Unity.Jobs;
 
 namespace NativeGridNamespace
 {
@@ -13,7 +12,7 @@ namespace NativeGridNamespace
 
 
 		/// <summary> Bresenham's line drawing algorithm (https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm). </summary>
-		public static void TraceLine ( NativeList<int2> results , INT2 A , INT2 B )
+		public static void TraceLine ( INT2 A , INT2 B , NativeList<int2> results , int2 min , int2 max )
 		{
 			results.Clear();
 			{
@@ -25,7 +24,7 @@ namespace NativeGridNamespace
 				}
 			}
 
-			int2 pos = A;
+			int2 coord = A;
 			int d, dx, dy, ai, bi, xi, yi;
 
 			if( A.x<B.x )
@@ -50,7 +49,7 @@ namespace NativeGridNamespace
 				dy = A.y - B.y;
 			}
 			
-			results.Add( pos );
+			results.Add( coord );
 			
 			if( dx>dy )
 			{
@@ -58,21 +57,24 @@ namespace NativeGridNamespace
 				bi = dy * 2;
 				d = bi - dx;
 
-				while( pos.x!=B.x )
+				while( coord.x!=B.x )
 				{
 					if( d>=0 )
 					{
-						pos.x += xi;
-						pos.y += yi;
+						coord.x += xi;
+						coord.y += yi;
 						d += ai;
 					}
 					else
 					{
 						d += bi;
-						pos.x += xi;
+						coord.x += xi;
 					}
+
+					// test for out of bounds:
+					if( math.any(new bool4{ x=coord.x<min.x , y=coord.y<min.y , z=coord.x>max.x , w=coord.y>max.y }) ) return;
 					
-					results.Add( pos );
+					results.Add( coord );
 				}
 			}
 			else
@@ -81,37 +83,24 @@ namespace NativeGridNamespace
 				bi = dx * 2;
 				d = bi - dy;
 				
-				while( pos.y!=B.y )
+				while( coord.y!=B.y )
 				{
 					if( d>=0 )
 					{
-						pos.x += xi;
-						pos.y += yi;
+						coord.x += xi;
+						coord.y += yi;
 						d += ai;
 					}
 					else
 					{
 						d += bi;
-						pos.y += yi;
+						coord.y += yi;
 					}
 					
-					results.Add( pos );
-				}
-			}
-		}
+					// test for out of bounds:
+					if( math.any(new bool4{ x=coord.x<min.x , y=coord.y<min.y , z=coord.x>max.x , w=coord.y>max.y }) ) return;
 
-		public struct TraceLineJob<T> : IJob
-			where T : unmanaged
-		{
-			public NativeArray<T> Array;
-			public int2 Start, End;
-			void IJob.Execute ()
-			{
-				var indices = new NativeList<int2>( (int)( math.distance(Start,End) * math.SQRT2 ) , Allocator.Temp );
-				TraceLine( results:indices , A:Start , B:End );
-				foreach( int2 coord in indices )
-				{
-					
+					results.Add( coord );
 				}
 			}
 		}

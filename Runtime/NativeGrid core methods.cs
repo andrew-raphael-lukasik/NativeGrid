@@ -1,8 +1,6 @@
 /// homepage: https://github.com/andrew-raphael-lukasik/NativeGrid
-
 using UnityEngine;
 using UnityEngine.Assertions;
-
 using Unity.Mathematics;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -152,7 +150,10 @@ namespace NativeGridNamespace
 		/// <summary> Fill </summary>
 		public JobHandle Fill ( T value , JobHandle dependency = default(JobHandle) )
 		{
-			var job = new FillJob<T>( array:_array , value:value );
+			var job = new FillJob<T>(
+				array:	_array ,
+				value:	value
+			);
 			return Dependency = job.Schedule(
 				_array.Length , 1024 ,
 				JobHandle.CombineDependencies( dependency , Dependency )
@@ -162,18 +163,39 @@ namespace NativeGridNamespace
 		/// <summary> Fill rectangle </summary>
 		public JobHandle Fill ( RectInt region , T value , JobHandle dependency = default(JobHandle) )
 		{
-			var job = new FillRegionJob<T>( region:region , array:this._array , value:value , array_width:this.Width );
+			var job = new FillRegionJob<T>(
+				region:			region ,
+				array:			this._array ,
+				value:			value ,
+				array_width:	this.Width
+			);
 			return Dependency = job.Schedule(
 				region.width*region.height , 1024 ,
 				JobHandle.CombineDependencies( dependency , Dependency )
 			);
 		}
 
-		
+		/// <summary> Fills a line trace between 2 coords. </summary>
+		public JobHandle FillLine ( INT2 a , INT2 b , T fill , JobHandle dependency = default(JobHandle) )
+		{
+			return new FillLineJob<T>(
+				array:		this._array ,
+				arrayWidth:	this.Width ,
+				start:		a ,
+				end:		b ,
+				fill:		fill
+			).Schedule( JobHandle.CombineDependencies( this.Dependency, dependency ) );
+		}
+
 		/// <summary> Fills grid border cells. </summary>
 		public JobHandle FillBorders ( T fill , JobHandle dependency = default(JobHandle) )
 		{
-			var job = new FillBordersJob<T>( array:_array , width:Width , height:Height , fill:fill );
+			var job = new FillBordersJob<T>(
+				array:		this._array ,
+				width:		this.Width ,
+				height:		this.Height ,
+				fill:		fill
+			);
 			return Dependency = job.Schedule( JobHandle.CombineDependencies(dependency,Dependency) );
 		}
 
