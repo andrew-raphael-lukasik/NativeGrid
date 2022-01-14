@@ -1,7 +1,12 @@
 # NativeGrid
 
-NativeGrid: Bunch of 2D data utilities for ECS and `Unity.Jobs`.
-NativeGrid<span><</span>RGB24<span>></span>: A managed container that stores `NativeArray` with it's basic info to use in 2d/grid manner.
+### NativeGrid:
+A bunch of 2D data utilities for ECS and `Unity.Jobs`.
+
+### NativeGrid<span><</span>T<span>></span>:
+Managed container that stores `NativeArray` with it's basic info to use in 2d/grid manner.
+
+---
 
 Here is an example how you can store store `RawTextureData` (pointer to a CPU-side texture buffer) inside this NativeGrid<span><</span>RGB24<span>></span>-thing and do something ambiguously useful with it: trace and draw lines/paths on that texture ([more relevant info](https://github.com/andrew-raphael-lukasik/RawTextureDataProcessingExamples)).
 
