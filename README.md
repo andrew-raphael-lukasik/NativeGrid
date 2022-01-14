@@ -1,8 +1,11 @@
 # NativeGrid
 
-Bunch of 2D data utilities for ECS, Unity.Jobs.
+NativeGrid: Bunch of 2D data utilities for ECS and `Unity.Jobs`.
+NativeGrid<span><</span>RGB24<span>></span>: A managed container that stores `NativeArray` with it's basic info to use in 2d/grid manner.
 
-- Managed container to store state of unmanaged allocation
+Here is an example how you can store store `RawTextureData` (pointer to a CPU-side texture buffer) inside this NativeGrid<span><</span>RGB24<span>></span>-thing and do something ambiguously useful with it: trace and draw lines/paths on that texture ([more relevant info](https://github.com/andrew-raphael-lukasik/RawTextureDataProcessingExamples)).
+
+Note: this saves RAM because texture memory is not being duplicated on CPU-side anymore.
 ```
 using UnityEngine;
 using Unity.Mathematics;
@@ -56,7 +59,6 @@ public class NativeGridPaint : MonoBehaviour
 }
 
 ```
-- Schedule your jobs to read/write to grid.Array using grid.Dependency JobHandle
 - Performant, allocation-free enumerator to find all neighbouring cells (`NeighbourEnumerator : INativeEnumerator<int2>`)
 ```
 var enumerator = new NeighbourEnumerator( coord:new int2(0,1) , gridWidth:128 , gridHeight:128 );
@@ -74,8 +76,7 @@ while( enumerator.MoveNext(out int2 neighbourCoord) )
 
   > Test window available under: Test>NativeGrid>Pathfinding
 
-- You can process Texture2D without (managed) allocations by nesting it's native array inside NativeGrid<span><</span>RGB24<span>></span>. You can trace and draw lines/paths on that texture for example.
-<br>(relevant raw color structs: https://github.com/andrew-raphael-lukasik/RawTextureDataProcessingExamples)
+- Schedule your jobs to read/write to grid.Array using grid.Dependency JobHandle
 
 # installation
 Add this line in `manifest.json` / `dependencies`:
