@@ -1,13 +1,9 @@
 /// homepage: https://github.com/andrew-raphael-lukasik/NativeGrid
-
-using Conditional = System.Diagnostics.ConditionalAttribute;
-
 using UnityEngine;
-using UnityEngine.Assertions;
-
 using Unity.Mathematics;
 using Unity.Collections;
-using Unity.Jobs;
+
+using Conditional = System.Diagnostics.ConditionalAttribute;
 
 namespace NativeGridNamespace
 {

@@ -2,7 +2,6 @@
 #if UNITY_ASSERTIONS
 using UnityEngine.Assertions;
 #endif
-
 using Unity.Mathematics;
 using Unity.Collections;
 using Unity.Jobs;
