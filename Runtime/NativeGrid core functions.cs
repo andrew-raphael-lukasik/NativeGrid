@@ -1,41 +1,36 @@
 /// homepage: https://github.com/andrew-raphael-lukasik/NativeGrid
-
 using UnityEngine;
-
 using Unity.Mathematics;
 using Unity.Collections;
-using Unity.Jobs;
 
 namespace NativeGridNamespace
 {
-	/// <summary>
-	/// Abstract parent class for generic NativeGrid<T>. To simplify referencing static functions/types from "NativeGrid<byte>.Index1dTo2d(i)" to "NativeGrid.Index1dTo2d(i)".
-	/// </summary>
+	/// <summary> Non-generic, abstract parent class for NativeGrid<T>. </summary>
 	public abstract partial class NativeGrid
 	{
 		#region PUBLIC METHODS
 
 
-		/// <summary> Converts 1d to 2d array index </summary>
-		public static int2 Index1dTo2d ( INT i , INT width )
+		/// <summary> Converts int index to int2 coord </summary>
+		public static int2 IndexToCoord ( INT i , INT width )
 		{
-			Assert_Index1dTo2d( i , width );
+			Assert_IndexToCoord( i , width );
 
 			return new int2{ x=i%width , y=i/width };
 		}
 		
 
-		/// <summary> Converts index 2d to 1d equivalent </summary>
-		public static int Index2dTo1d ( INT x , INT y , INT width )
+		/// <summary> Converts coord to it's index equivalent </summary>
+		public static int CoordToIndex ( INT x , INT y , INT width )
 		{
-			Assert_Index2dTo1d( x , y , width );
+			Assert_CoordToIndex( x , y , width );
 
 			return y * width + x;
 		}
-		public static int Index2dTo1d ( INT2 i2 , INT width ) => Index2dTo1d( i2.x , i2.y , width );
+		public static int CoordToIndex ( INT2 coord , INT width ) => CoordToIndex( coord.x , coord.y , width );
 
 
-		/// <summary> Translate regional coordinate to outer array index 1d </summary>
+		/// <summary> Translate regional coordinate to outer array index </summary>
 		/// <param name="R">Outer RectInt</param>
 		/// <param name="r">Inner, smaller RectInt</param>
 		/// <param name="rx">Inner x coordinate</param>
@@ -45,10 +40,10 @@ namespace NativeGridNamespace
 		{
 			Assert_IndexTranslate( r , rx , ry , R_width );
 
-			return Index2dTo1d( r.x+rx , r.y+ry , R_width );
+			return CoordToIndex( r.x+rx , r.y+ry , R_width );
 		}
 
-		/// <summary> Translate regional coordinate to outer array index 1d </summary>
+		/// <summary> Translate regional coordinate to outer array index </summary>
 		/// <param name="R">Outer RectInt</param>
 		/// <param name="r">Inner, smaller RectInt</param>
 		/// <param name="rx">Inner x coordinate</param>
@@ -68,24 +63,24 @@ namespace NativeGridNamespace
 		/// <param name="R_width">Outer RectInt.width</param>
 		public static int IndexTranslate ( RectInt r , INT ri , INT R_width )
 		{
-			int2 ri2d = Index1dTo2d( ri , r.width );
+			int2 ri2d = IndexToCoord( ri , r.width );
 			return IndexTranslate( r , ri2d.x , ri2d.y , R_width );
 		}
 
 
-		/// <summary> Determines whether index 2d is inside array bounds </summary>
-		public static bool IsIndex2dValid ( INT x , INT y , INT w , INT h ) => x>=0 && x<w && y>=0 && y<h;
-		public static bool IsIndex2dValid ( INT2 i2 , INT w , INT h ) => IsIndex2dValid( i2.x , i2.y , w , h );
+		/// <summary> Determines whether int2 coord is inside array bounds </summary>
+		public static bool IsCoordValid ( INT x , INT y , INT w , INT h ) => x>=0 && x<w && y>=0 && y<h;
+		public static bool IsCoordValid ( INT2 coord , INT w , INT h ) => IsCoordValid( coord.x , coord.y , w , h );
 
 
-		/// <summary> Determines whether index 1d is inside array bounds </summary>
-		public static bool IsIndex1dValid ( INT i , INT len ) => 0>=0 && i<len;
+		/// <summary> Determines whether index is inside array bounds </summary>
+		public static bool IsIndexValid ( INT i , INT len ) => 0>=0 && i<len;
 
 
-		/// <summary> Point from 2d indices </summary>
-		public static float2 Index2dToPoint ( INT x , INT y , FLOAT stepX , FLOAT stepY ) => new float2{ x=(float)x*stepX , y=(float)y*stepY };
-		public static float2 Index2dToPoint ( INT2 i2 , FLOAT stepX , FLOAT stepY ) => Index2dToPoint( i2.x , i2.y , stepX , stepY );
-		public static float2 Index2dToPoint ( INT2 i2 , FLOAT2 step ) => Index2dToPoint( i2.x , i2.y , step.x , step.y );
+		/// <summary> Point from a coordinate </summary>
+		public static float2 CoordToPoint ( INT x , INT y , FLOAT stepX , FLOAT stepY ) => new float2{ x=(float)x*stepX , y=(float)y*stepY };
+		public static float2 CoordToPoint ( INT2 coord , FLOAT stepX , FLOAT stepY ) => CoordToPoint( coord.x , coord.y , stepX , stepY );
+		public static float2 CoordToPoint ( INT2 coord , FLOAT2 step ) => CoordToPoint( coord.x , coord.y , step.x , step.y );
 
 
 		/// <summary> Value at point </summary>
@@ -98,10 +93,10 @@ namespace NativeGridNamespace
 		/// <summary> Index from point </summary>
 		public static int PointToIndex ( FLOAT2 point , FLOAT2 worldSize , INT width , INT height )
 		{
-			int2 xy = PointToIndex2d( point , worldSize , width , height );
-			return Index2dTo1d( xy , width );
+			int2 coord = PointToCoord( point , worldSize , width , height );
+			return CoordToIndex( coord , width );
 		}
-		public static int2 PointToIndex2d ( FLOAT2 point , FLOAT2 worldSize , INT width , INT height )
+		public static int2 PointToCoord ( FLOAT2 point , FLOAT2 worldSize , INT width , INT height )
 		{
 			GetPositionInsideCell( point , new int2{ x=width , y=height } , worldSize , out int2 lo , out int2 hi , out float2 f );
 			int2 index = new int2{
@@ -155,8 +150,8 @@ namespace NativeGridNamespace
 
 
 		public static int ClampIndex ( INT i , INT length ) => math.clamp( i , 0 , length-1 );
-		public static int2 ClampIndex2d ( INT x , INT y , INT width , INT height ) => math.clamp( new int2{ x=x , y=y } , int2.zero , new int2{ x=width-1 , y=height-1 } );
-		public static int2 ClampIndex2d ( INT2 i2 , INT width , INT height ) => ClampIndex2d( i2.x , i2.y , width , height );
+		public static int2 ClampCoord ( INT x , INT y , INT width , INT height ) => math.clamp( new int2{ x=x , y=y } , int2.zero , new int2{ x=width-1 , y=height-1 } );
+		public static int2 ClampCoord ( INT2 coord , INT width , INT height ) => ClampCoord( coord.x , coord.y , width , height );
 		
 
 		/// <summary> System.Math.Round( value, System.MidpointRounding.AwayFromZero ) equivalent </summary>

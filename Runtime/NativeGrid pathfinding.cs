@@ -1,5 +1,4 @@
 /// homepage: https://github.com/andrew-raphael-lukasik/NativeGrid
-
 #if UNITY_ASSERTIONS
 using UnityEngine.Assertions;
 #endif
@@ -7,14 +6,13 @@ using UnityEngine.Assertions;
 using Unity.Mathematics;
 using Unity.Collections;
 using Unity.Jobs;
+using Unity.Profiling;
 
 using Debug = UnityEngine.Debug;
 
 namespace NativeGridNamespace
 {
-	/// <summary>
-	/// Abstract parent class for generic NativeGrid{STRUCT}. To simplify referencing static functions/types from "NativeGrid{byte}.Index1dTo2d(i)" to "NativeGrid.Index1dTo2d(i)".
-	/// </summary>
+	/// <summary> Non-generic, abstract parent class for NativeGrid<T>. </summary>
 	public abstract partial class NativeGrid
 	{
 		#region PUBLIC METHODS
@@ -43,6 +41,8 @@ namespace NativeGridNamespace
 			public NativeArray<int2> Solution;
 			public NativeMinHeap<int2,half,Comparer> Frontier;
 			public NativeHashSet<int2> Visited;
+
+			ProfilerMarker _PM_Initialization, _PM_Search, _PM_Neighbours, _PM_FrontierPush, _PM_FrontierPop, _PM_UpdateFG, _PM_Trace;
 
 			/// <summary> Traces path using some kind of A* algorithm </summary>
 			/// <param name="start"> Start index 2d </param>
@@ -78,105 +78,111 @@ namespace NativeGridNamespace
 				this.ResultsStartAtIndexZero = resultsStartAtIndexZero;
 
 				int length = moveCost.Length;
-				int start1d = Index2dTo1d( start , moveCostWidth );
+				int startIndex = CoordToIndex( start , moveCostWidth );
 				this.G = new NativeArray<half>( length , Allocator.TempJob , NativeArrayOptions.UninitializedMemory );
 				this.F = new NativeArray<half>( length , Allocator.TempJob , NativeArrayOptions.UninitializedMemory );
 				this.Solution = new NativeArray<int2>( length , Allocator.TempJob );
 				this.Frontier = new NativeMinHeap<int2,half,Comparer>( length , Allocator.TempJob , new Comparer( moveCostWidth ) , this.F );
 				this.Visited = new NativeHashSet<int2>( length , Allocator.TempJob );
+				
+				this._PM_Initialization = new ProfilerMarker("initialization");
+				this._PM_Search = new ProfilerMarker("search");
+				this._PM_Neighbours = new ProfilerMarker("scan neighbors");
+				this._PM_FrontierPush = new ProfilerMarker("frontier.push");
+				this._PM_FrontierPop = new ProfilerMarker("frontier.pop");
+				this._PM_UpdateFG = new ProfilerMarker("update f & g");
+				this._PM_Trace = new ProfilerMarker("trace path");
 			}
 			public void Execute ()
 			{
-				int start1d = Index2dTo1d( Start , MoveCostWidth );
-				int dest1d = Index2dTo1d( Destination , MoveCostWidth );
+				_PM_Initialization.Begin();
+				int startIndex = CoordToIndex( Start , MoveCostWidth );
+				int destIndex = CoordToIndex( Destination , MoveCostWidth );
 				{
 					// early test for unsolvable input:
-					if( (MoveCost[start1d]/255f)>=1 ) return;
-					if( (MoveCost[dest1d]/255f)>=1 ) return;
+					if( (MoveCost[startIndex]/255f)>=1 ) return;
+					if( (MoveCost[destIndex]/255f)>=1 ) return;
 				}
 				{
 					// initialize GData array:
 					for( int i=G.Length-1 ; i!=-1 ; i-- )
 						G[i] = (half) half.MaxValue;
-					G[start1d] = half.zero;
+					G[startIndex] = half.zero;
 				}
 				{
 					// initialize FData array:
 					for( int i=F.Length-1 ; i!=-1 ; i-- )
 						F[i] = (half) half.MaxValue;
-					F[start1d] = half.zero;
+					F[startIndex] = half.zero;
 				}
-				Solution[start1d] = Start;
+				Solution[startIndex] = Start;
 				Frontier.Push( Start );
 				Visited.Add( Start );
-				var neighbours = new NativeList<int2>( 8 , Allocator.Temp );
+				_PM_Initialization.End();
 				
 				// solve
-				int2 node = -1;
-				int step = 0;
+				_PM_Search.Begin();
+				int moveCostHeight = MoveCost.Length / MoveCostWidth;
+				int2 currentCoord = -1;
+				int numSearchSteps = 0;
 				bool destinationReached = false;
 				while(
 						Frontier.Length!=0
-					&&	!( destinationReached = math.all(node==Destination) )
-					&&	step<StepBudget
+					&&	!( destinationReached = math.all(currentCoord==Destination) )
+					&&	numSearchSteps++<StepBudget
 				)
 				{
-					node = Frontier.Pop();// we grab candidate with lowest F
-					int node1d = Index2dTo1d( node , MoveCostWidth );
-					float node_g = G[node1d];
-
-					// string frontierBefore = Frontier.ToString();
-					// node = Frontier.Pop();// we grab candidate with lowest F so far
-					// string frontierAfter = Frontier.ToString();
-					// Debug.Log($"step {step} at [{node.x},{node.y}]");// \nfrontier before: {frontierBefore}\nfrontier after: {frontierAfter}"
+					_PM_Initialization.Begin();
+					_PM_FrontierPop.Begin();
+					currentCoord = Frontier.Pop();// grab candidate with lowest F
+					_PM_FrontierPop.End();
+					int currentIndex = CoordToIndex( currentCoord , MoveCostWidth );
+					float node_g = G[currentIndex];
+					_PM_Initialization.End();
 
 					// lets check all its neighbours:
-					EnumerateNeighbours( neighbours , MoveCostWidth , MoveCostWidth , node );
-					int neighboursLength = neighbours.Length;
-					for( int i=0 ; i<neighboursLength ; i++ )
+					_PM_Neighbours.Begin();
+					var enumerator = new NeighbourEnumerator( coord:currentCoord , gridWidth:MoveCostWidth , gridHeight:moveCostHeight );
+					while( enumerator.MoveNext(out int2 neighbourCoord) )
 					{
-						int2 neighbour = neighbours[i];
-						int neighbour1d = Index2dTo1d( neighbour , MoveCostWidth );
-						bool orthogonal = math.any(node==neighbour);
-						float movecost = MoveCost[neighbour1d] / 255f;
-						if( movecost<1f )
+						int neighbourIndex = CoordToIndex( neighbourCoord , MoveCostWidth );
+						bool orthogonal = math.any(currentCoord==neighbourCoord);
+						byte moveCostByte = MoveCost[neighbourIndex];
+						if( moveCostByte==(byte)255 ) continue;// 100% obstacle
+						float movecost = ( moveCostByte / 255f ) * MoveCostSensitivity;
+
+						// g - exact dist from start node
+						// h - approx dist to dest node as predicted by heuristic func
+						float g = node_g + ( 1f + movecost ) * ( orthogonal ? 1f : 1.41421356237f );
+						float h = EuclideanHeuristic( neighbourCoord , Destination ) * HMultiplier;
+						float f = g + h;
+						
+						// update F & G:
+						if( g<G[neighbourIndex] )
 						{
-							movecost *= MoveCostSensitivity;
-
-							// g - dist from start node
-							// h - dist from dest node as predicted by heuristic func
-
-							float g = node_g + ( 1f + movecost ) * ( orthogonal ? 1f : 1.41421356237f );
-							float h = EuclideanHeuristic( neighbour , Destination ) * HMultiplier;
-							float f = g + h;
-							
-							// update G:
-							if( g<G[neighbour1d] )
-							{
-								G[neighbour1d] = (half) math.min( g , half.MaxValue );
-							}
-
-							// update F:
-							if( f<F[neighbour1d] )
-							{
-								F[neighbour1d] = (half) math.min( f , half.MaxValue );
-								Solution[neighbour1d] = node;
-							}
-
-							// update frontier:
-							if( !Visited.Contains(neighbour) )
-								// if( !Frontier.AsArray().Contains(neighbour) )
-								Frontier.Push(neighbour);
+							_PM_UpdateFG.Begin();
+							F[neighbourIndex] = (half) f;
+							G[neighbourIndex] = (half) g;
+							Solution[neighbourIndex] = currentCoord;
+							_PM_UpdateFG.End();
 						}
 
 						// update frontier:
-						Visited.Add(neighbour);
-					}
+						_PM_FrontierPush.Begin();
+						if( !Visited.Contains(neighbourCoord) )
+							// if( !Frontier.AsArray().Contains(neighbour) )
+							Frontier.Push(neighbourCoord);
+						_PM_FrontierPush.End();
 
-					step++;
+						// update frontier:
+						Visited.Add(neighbourCoord);
+					}
+					_PM_Neighbours.End();
 				}
+				_PM_Search.End();
 
 				// create path:
+				_PM_Trace.Begin();
 				if( destinationReached )
 				{
 					// Debug.Log($"A* job took {step} steps, path resolved.");
@@ -193,6 +199,7 @@ namespace NativeGridNamespace
 					
 					Results.Clear();// make sure to communite there is no path
 				}
+				_PM_Trace.End();
 			}
 			public void Dispose ()
 			{
@@ -208,8 +215,8 @@ namespace NativeGridNamespace
 				public Comparer ( int width ) => this.Width = width;
 				public int Compare( int2 lhs , int2 rhs , NativeSlice<half> comparables )
 				{
-					float lhsValue = comparables[ Index2dTo1d(lhs,Width) ];
-					float rhsValue = comparables[ Index2dTo1d(rhs,Width) ];
+					float lhsValue = comparables[ CoordToIndex(lhs,Width) ];
+					float rhsValue = comparables[ CoordToIndex(rhs,Width) ];
 					return lhsValue.CompareTo(rhsValue);
 				}
 			}
@@ -235,17 +242,17 @@ namespace NativeGridNamespace
 			if( results.Capacity<width*2 ) results.Capacity = width*2;
 			int solutionLength = solution.Length;
 
-			int2 pos = destination;
-			int pos1d = Index2dTo1d( pos , width );
+			int2 posCoord = destination;
+			int posIndex = CoordToIndex( posCoord , width );
 			int step = 0;
-			while( !math.all(pos==solution[pos1d]) && step<solutionLength )
+			while( !math.all(posCoord==solution[posIndex]) && step<solutionLength )
 			{
-				results.Add( pos );
-				pos = solution[pos1d];
-				pos1d = Index2dTo1d( pos , width );
+				results.Add( posCoord );
+				posCoord = solution[posIndex];
+				posIndex = CoordToIndex( posCoord , width );
 				step++;
 			}
-			bool wasDestinationReached = math.all( pos==solution[pos1d] );
+			bool wasDestinationReached = math.all( posCoord==solution[posIndex] );
 
 			if( resultsStartAtIndexZero )
 				ReverseArray<int2>( results );
@@ -261,8 +268,8 @@ namespace NativeGridNamespace
 			INT solvedGridWidth ,
 			INT2 destination ,
 			NativeArray<int2> segmentedIndices , // array segmented to store multiple paths
-			INT segmentStart , // position for first path index2d
-			INT segmentEnd , // position for last path index2d
+			INT segmentStart , // position for first path coord
+			INT segmentEnd , // position for last path coord
 			out int pathLength
 		)
 		{
@@ -271,8 +278,8 @@ namespace NativeGridNamespace
 			ASSERT_TRUE( destination.x<solvedGridWidth && destination.y<solvedGridWidth , $"destination: {destination} < {solvedGridWidth} solutionWidth" );
 			#endif
 
-			int2 pos = destination;
-			int pos1d = Index2dTo1d( pos , solvedGridWidth );
+			int2 posCoord = destination;
+			int posIndex = CoordToIndex( posCoord , solvedGridWidth );
 			int availableSpace = segmentEnd - segmentStart;
 			int step = 0;
 
@@ -281,7 +288,7 @@ namespace NativeGridNamespace
 			#endif
 			
 			while(
-				math.any( pos!=solvedGrid[pos1d] )
+				math.any( posCoord!=solvedGrid[posIndex] )
 				&& step<availableSpace
 			)
 			{
@@ -295,9 +302,9 @@ namespace NativeGridNamespace
 				}
 				#endif
 
-				segmentedIndices[segmentedArrayIndex] = pos;
-				pos = solvedGrid[pos1d];
-				pos1d = Index2dTo1d( pos , solvedGridWidth );
+				segmentedIndices[segmentedArrayIndex] = posCoord;
+				posCoord = solvedGrid[posIndex];
+				posIndex = CoordToIndex( posCoord , solvedGridWidth );
 
 				#if UNITY_ASSERTIONS
 				localAssertions();
@@ -306,7 +313,7 @@ namespace NativeGridNamespace
 				step++;
 			}
 			pathLength = step;
-			bool wasDestinationReached = math.all( pos==solvedGrid[pos1d] );
+			bool wasDestinationReached = math.all( posCoord==solvedGrid[posIndex] );
 
 			#if UNITY_ASSERTIONS
 			for( int n=0 ; n<pathLength ; n++ )
@@ -340,9 +347,9 @@ namespace NativeGridNamespace
 			#if UNITY_ASSERTIONS
 			void localAssertions ()
 			{
-				FixedString128 debugInfo = $"pos: {pos}, pos1d:{pos1d}, solution.Length:{solvedGrid.Length}, solutionWidth:{solvedGridWidth} squared: {solvedGridWidth}";
-				ASSERT_TRUE( pos1d>=0 , debugInfo );
-				ASSERT_TRUE( pos1d<solvedGrid.Length , debugInfo );
+				FixedString128 debugInfo = $"posCoord: {posCoord}, posIndex:{posIndex}, solution.Length:{solvedGrid.Length}, solutionWidth:{solvedGridWidth} squared: {solvedGridWidth}";
+				ASSERT_TRUE( posIndex>=0 , debugInfo );
+				ASSERT_TRUE( posIndex<solvedGrid.Length , debugInfo );
 			}
 			#endif
 

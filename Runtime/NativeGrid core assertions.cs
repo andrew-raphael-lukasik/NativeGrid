@@ -11,9 +11,7 @@ using Unity.Jobs;
 
 namespace NativeGridNamespace
 {
-	/// <summary>
-	/// Abstract parent class for generic NativeGrid<T>. To simplify referencing static functions/types from "NativeGrid<byte>.Index1dTo2d(i)" to "NativeGrid.Index1dTo2d(i)".
-	/// </summary>
+	/// <summary> Non-generic, abstract parent class for NativeGrid<T>. </summary>
 	public abstract partial class NativeGrid
 	{
 		#region ASSERTIONS
@@ -49,21 +47,21 @@ namespace NativeGridNamespace
 		}
 
 		[Conditional("UNITY_ASSERTIONS")]
-		static void Assert_Index1dTo2d ( int i , int width )
+		static void Assert_IndexToCoord ( int i , int width )
 		{
 			ASSERT_TRUE( width>0 , $"FAILED: width ({width}) > 0" );
 			ASSERT_TRUE( i>=0 , $"FAILED: i ({i}) >= 0" );
 		}
 
 		[Conditional("UNITY_ASSERTIONS")]
-		static void Assert_Index2dTo1d ( int x , int y , int width )
+		static void Assert_CoordToIndex ( int x , int y , int width )
 		{
 			ASSERT_TRUE( width>0 , $"FAILED: width ({width}) > 0" );
 			ASSERT_TRUE( x>=0 , $"FAILED: x ({x}) >= 0" );
 			ASSERT_TRUE( y>=0 , $"FAILED: y ({y}) >= 0" );
 			ASSERT_TRUE( x<width , $"FAILED: x ({x}) < ({width}) width" );
 		}
-		static void Assert_Index2dTo1d ( INT2 Index2d , int width ) => Assert_Index2dTo1d( Index2d.x , Index2d.y , width );
+		static void Assert_CoordToIndex ( INT2 coord , int width ) => Assert_CoordToIndex( coord.x , coord.y , width );
 
 
 		#endregion

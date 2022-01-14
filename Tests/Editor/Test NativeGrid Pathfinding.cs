@@ -320,23 +320,23 @@ namespace NativeGridNamespace.Tests
 			// visualize:
 			{
 				// start cell
-				int startI = NativeGrid.Index2dTo1d( _startI2 , _resolution );
+				int startI = NativeGrid.CoordToIndex( _startI2 , _resolution );
 				var cellStyle = _grid[startI].style;
 				Color col = cellStyle.backgroundColor.value * 0.75f;
 				col.r = 1f;
 				cellStyle.backgroundColor = col;
 			}
-			foreach( var i2 in path )// path
+			foreach( var coord in path )// path
 			{
-				int i = NativeGrid.Index2dTo1d( i2 , _resolution );
+				int i = NativeGrid.CoordToIndex( coord , _resolution );
 				var cellStyle = _grid[i].style;
 				Color col = cellStyle.backgroundColor.value * 0.75f;
 				col.r = 1f;
 				cellStyle.backgroundColor = col;
 			}
-			foreach( var i2 in visited )// visited
+			foreach( var coord in visited )// visited
 			{
-				int i = NativeGrid.Index2dTo1d( i2 , _resolution );
+				int i = NativeGrid.CoordToIndex( coord , _resolution );
 				var CELL = _grid[i];
 				
 				var cellStyle = CELL.style;
@@ -348,16 +348,16 @@ namespace NativeGridNamespace.Tests
 			for( int i=fData.Length-1 ; i!=-1 ; i-- )// labels
 			{
 				var CELL = _grid[i];
-				int2 i2 = NativeGrid.Index1dTo2d( i , _resolution );
+				int2 coord = NativeGrid.IndexToCoord( i , _resolution );
 				Label LABEL = CELL[0] as Label;
 
 				var f = fData[i];
 				var g = gData[i];
-				var h = NativeGrid.EuclideanHeuristic( i2 , _destI2 );
+				var h = NativeGrid.EuclideanHeuristic( coord , _destI2 );
 				int2 origin = solution[i];
 				if( f!=float.MaxValue )
 				{
-					LABEL.text = $"<b>[{i2.x},{i2.y}]</b>\n<b>F</b>:{f:G8}\n<b>G</b>:{g:G8}\n<b>H</b>:{h:G8}\nstep-1: [{origin.x},{origin.y}]";
+					LABEL.text = $"<b>[{coord.x},{coord.y}]</b>\n<b>F</b>:{f:G8}\n<b>G</b>:{g:G8}\n<b>H</b>:{h:G8}\nstep-1: [{origin.x},{origin.y}]";
 					LABEL.visible = true;
 				}
 				else LABEL.visible = false;

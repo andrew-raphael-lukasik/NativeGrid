@@ -127,7 +127,7 @@ namespace NativeGridNamespace.Tests
 				Debug.Log( $"min-heap:\t{minHeap.ToString()}" );
 				Debug.Log( $"Peek():\t{minHeap.Peek()}" );
 
-				Assert.AreEqual( minHeap.Pop() , NativeGrid.Index1dTo2d(1,weights.Length/2) );
+				Assert.AreEqual( minHeap.Pop() , NativeGrid.IndexToCoord(1,weights.Length/2) );
 			}
 
 			[Test] public static void Peek_04 ()
@@ -148,7 +148,7 @@ namespace NativeGridNamespace.Tests
 				Debug.Log( $"min-heap:\t{minHeap.ToString()}" );
 				Debug.Log( $"Peek():\t{minHeap.Peek()}" );
 
-				Assert.AreEqual( minHeap.Pop() , NativeGrid.Index1dTo2d(2,weights.Length/2) );
+				Assert.AreEqual( minHeap.Pop() , NativeGrid.IndexToCoord(2,weights.Length/2) );
 			}
 
 		}

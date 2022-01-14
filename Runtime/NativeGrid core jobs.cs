@@ -1,23 +1,22 @@
 /// homepage: https://github.com/andrew-raphael-lukasik/NativeGrid
-
 using UnityEngine;
 using UnityEngine.Assertions;
-
 using Unity.Mathematics;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 
+using BurstCompile = Unity.Burst.BurstCompileAttribute;
+
 namespace NativeGridNamespace
 {
-	/// <summary>
-	/// Abstract parent class for generic NativeGrid<T>. To simplify referencing static functions/types from "NativeGrid<byte>.Index1dTo2d(i)" to "NativeGrid.Index1dTo2d(i)".
-	/// </summary>
+	/// <summary> Non-generic, abstract parent class for NativeGrid<T>. </summary>
 	public abstract partial class NativeGrid
 	{
 		#region JOBS
 
 
+		[BurstCompile]
 		public static JobHandle Copy <T>
 		(
 			NativeGrid<T> source ,
@@ -39,6 +38,7 @@ namespace NativeGridNamespace
 			);
 		}
 
+		[BurstCompile]
 		public unsafe struct CopyJob <T> : IJob where T : unmanaged
 		{
 			[ReadOnly] NativeArray<T> src;
@@ -59,6 +59,7 @@ namespace NativeGridNamespace
 			}
 		}
 
+		[BurstCompile]
 		public struct CopyJob <SRC,DST> : IJob
 			where SRC : unmanaged
 			where DST : unmanaged
@@ -81,7 +82,7 @@ namespace NativeGridNamespace
 			}
 		}
 
-		[Unity.Burst.BurstCompile]
+		[BurstCompile]
 		public struct CopyRegionJob <T> : IJobParallelFor where T : unmanaged
 		{
 			[ReadOnly] NativeArray<T> src;
@@ -98,7 +99,7 @@ namespace NativeGridNamespace
 			void IJobParallelFor.Execute ( int regionIndex ) => dst[regionIndex] = src[IndexTranslate(src_region,regionIndex,src_width)];
 		}
 
-		[Unity.Burst.BurstCompile]
+		[BurstCompile]
 		public struct FillJob <T> : IJobParallelFor where T : unmanaged
 		{
 			[WriteOnly] NativeArray<T> array;
@@ -111,7 +112,7 @@ namespace NativeGridNamespace
 			void IJobParallelFor.Execute ( int i ) => array[i] = value;
 		}
 
-		[Unity.Burst.BurstCompile]
+		[BurstCompile]
 		public struct FillRegionJob <T> : IJobParallelFor where T : unmanaged
 		{
 			[WriteOnly][NativeDisableParallelForRestriction]
@@ -129,7 +130,35 @@ namespace NativeGridNamespace
 			void IJobParallelFor.Execute ( int regionIndex ) => array[IndexTranslate( region , regionIndex , array_width )] = value;
 		}
 
-		[Unity.Burst.BurstCompile]
+		[BurstCompile]
+		public struct FillLineJob<T> : IJob
+			where T : unmanaged
+		{
+			public NativeArray<T> Array;
+			public int ArrayWidth;
+			public int2 Start, End;
+			public T Fill;
+			public FillLineJob ( NativeArray<T> array , int arrayWidth , int2 start , int2 end , T fill )
+			{
+				this.Array = array;
+				this.ArrayWidth = arrayWidth;
+				this.Start = start;
+				this.End = end;
+				this.Fill = fill;
+			}
+			void IJob.Execute ()
+			{
+				var indices = new NativeList<int2>( (int)( math.distance(Start,End) * math.SQRT2 ) , Allocator.Temp );
+				TraceLine( A:Start , B:End , results:indices , min:int2.zero , max:new int2{ x=this.ArrayWidth-1 , y=(this.Array.Length/this.ArrayWidth)-1 } );
+				foreach( int2 coord in indices )
+				{
+					int i = CoordToIndex( coord:coord , width:ArrayWidth );
+					Array[i] = Fill;
+				}
+			}
+		}
+
+		[BurstCompile]
 		public struct FillBordersJob <T> : IJob where T : unmanaged
 		{
 			[WriteOnly][NativeDisableParallelForRestriction]
@@ -150,15 +179,15 @@ namespace NativeGridNamespace
 				int yMax = height-1;
 				for( int x=0 ; x<width ; x++ )
 				{
-					array[Index2dTo1d(x,0,width)] = fill;
-					array[Index2dTo1d(x,yMax,width)] = fill;
+					array[CoordToIndex(x,0,width)] = fill;
+					array[CoordToIndex(x,yMax,width)] = fill;
 				}
 				// fill vertical border lines:
 				int xMax = width-1;
 				for( int y = 1 ; y < height-1 ; y++ )
 				{
-					array[Index2dTo1d(0,y,width)] = fill;
-					array[Index2dTo1d(xMax,y,width)] = fill;
+					array[CoordToIndex(0,y,width)] = fill;
+					array[CoordToIndex(xMax,y,width)] = fill;
 				}
 			}
 		}
