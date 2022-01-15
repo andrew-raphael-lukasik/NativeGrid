@@ -17,7 +17,7 @@ Managed container that stores `NativeArray` with it's basic info to use in 2d/gr
 
 Here is an example how you can store store `RawTextureData` (pointer to a CPU-side texture buffer) inside this `NativeGrid<ARGB32>`-thing and do something ambiguously useful with it, like idk, trace and draw lines/paths on that texture:
 ```csharp
-var job = GRID.FillLine( startPixel , endPixel , fillColor );
+var fillLineJob = GRID.FillLine( startPixel , endPixel , fillColor );
 fillLineJob.Complete();
 ```
 Full example code: [a relative link](/Samples~/Texture2D/NativeGridPaint.cs)
