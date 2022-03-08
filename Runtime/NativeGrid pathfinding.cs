@@ -8,6 +8,7 @@ using Unity.Jobs;
 using Unity.Profiling;
 
 using Debug = UnityEngine.Debug;
+using BurstCompile = Unity.Burst.BurstCompileAttribute;
 
 namespace NativeGridNamespace
 {
@@ -19,7 +20,7 @@ namespace NativeGridNamespace
 
 		/// <summary> Traces path using A* algorithm </summary>
 		/// Format weights to 0.0 to 1.0 range. Heuristic can cease to work otherwise.
-		[Unity.Burst.BurstCompile]
+		[BurstCompile]
 		public struct AStarJob : IJob, System.IDisposable
 		{
 
