@@ -18,9 +18,9 @@ namespace NativeGridNamespace
 		public struct NeighbourEnumerator : INativeEnumerator<int2>
 		{
 			readonly int2 _coord;
+			readonly int _xMax, _yMax;
 			int2 _current;
 			byte _tick;
-			int _xMax, _yMax;
 
 			public NeighbourEnumerator ( int2 coord , int gridWidth , int gridHeight )
 			{
@@ -66,6 +66,115 @@ namespace NativeGridNamespace
 			{
 				_current = _coord;
 				_tick = 0;
+			}
+
+		}
+
+		public struct LineTraceEnumerator : INativeEnumerator<int2>
+		{
+			readonly int2 _src, _dst;
+			int2 _current;
+
+			public LineTraceEnumerator ( INT2 src , INT2 dst )
+			{
+				this._src = src;
+				this._dst = dst;
+				this._current = src;
+			}
+			// public LineTraceEnumerator ( INT2 src , INT2 dst , INT2 min , INT2 max )
+			// 	: this( src:src , dst:dst )
+			// {
+			// 	if(  )
+			// 	{
+
+			// 	}
+			// }
+
+			public int2 Current => _current;
+
+			public bool MoveNext ()
+			{
+				int d, dx, dy, ai, bi, xi, yi;
+
+				if( _current.x< _dst.x )
+				{
+					xi = 1;
+					dx = _dst.x - _current.x;
+				}
+				else
+				{
+					xi = -1;
+					dx = _current.x - _dst.x;
+				}
+				
+				if( _current.y< _dst.y )
+				{
+					yi = 1;
+					dy = _dst.y - _current.y;
+				}
+				else
+				{
+					yi = -1;
+					dy = _current.y - _dst.y;
+				}
+				
+				if( dx>dy )
+				{
+					ai = (dy - dx) * 2;
+					bi = dy * 2;
+					d = bi - dx;
+
+					while( _current.x!=_dst.x )
+					{
+						if( d>=0 )
+						{
+							_current.x += xi;
+							_current.y += yi;
+							d += ai;
+						}
+						else
+						{
+							d += bi;
+							_current.x += xi;
+						}
+						return true;
+					}
+				}
+				else
+				{
+					ai = ( dx - dy ) * 2;
+					bi = dx * 2;
+					d = bi - dy;
+					
+					while( _current.y!=_dst.y )
+					{
+						if( d>=0 )
+						{
+							_current.x += xi;
+							_current.y += yi;
+							d += ai;
+						}
+						else
+						{
+							d += bi;
+							_current.y += yi;
+						}
+						return true;
+					}
+				}
+				return false;
+			}
+
+			public bool MoveNext ( out int2 next )
+			{
+				bool success = MoveNext();
+				next = _current;
+				return success;
+			}
+
+			public void Reset ()
+			{
+				_current = _src;
 			}
 
 		}
