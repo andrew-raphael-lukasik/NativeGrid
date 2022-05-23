@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 using NUnit.Framework;
-
 using Unity.Mathematics;
 using Unity.Collections;
 using Unity.Jobs;
