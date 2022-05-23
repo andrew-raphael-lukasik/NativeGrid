@@ -1,6 +1,5 @@
 /// homepage: https://github.com/andrew-raphael-lukasik/NativeGrid
 using UnityEngine;
-using UnityEngine.Assertions;
 using Unity.Mathematics;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
