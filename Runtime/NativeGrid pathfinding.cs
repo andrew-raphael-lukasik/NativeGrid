@@ -347,7 +347,7 @@ namespace NativeGridNamespace
 			#if UNITY_ASSERTIONS
 			void localAssertions ()
 			{
-				FixedString128 debugInfo = $"posCoord: {posCoord}, posIndex:{posIndex}, solution.Length:{solvedGrid.Length}, solutionWidth:{solvedGridWidth} squared: {solvedGridWidth}";
+				FixedString128Bytes debugInfo = $"posCoord: {posCoord}, posIndex:{posIndex}, solution.Length:{solvedGrid.Length}, solutionWidth:{solvedGridWidth} squared: {solvedGridWidth}";
 				ASSERT_TRUE( posIndex>=0 , debugInfo );
 				ASSERT_TRUE( posIndex<solvedGrid.Length , debugInfo );
 			}
