@@ -14,7 +14,7 @@ namespace NativeGridNamespace
 
 
 		[Conditional("UNITY_ASSERTIONS")]
-		static void ASSERT_TRUE ( in bool b , in FixedString128 text )
+		static void ASSERT_TRUE ( in bool b , in FixedString128Bytes text )
 		{
 			if( !b ) Debug.LogError(text);
 		}
