@@ -255,7 +255,7 @@ namespace NativeGridNamespace
 			bool wasDestinationReached = math.all( posCoord==solution[posIndex] );
 
 			if( resultsStartAtIndexZero )
-				ReverseArray<int2>( results );
+				ReverseArray<int2>( results.AsArray() );
 
 			return wasDestinationReached;
 		}
